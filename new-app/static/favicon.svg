@@ -2,3 +2,7 @@
   <rect width="32" height="32" rx="4" fill="#0052CC"/>
   <path d="M8.5 23.5V8.5L16 16L23.5 8.5V23.5H8.5Z" fill="white"/>
 </svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <rect width="24" height="24" rx="4" fill="#5D4FE0"/>
+  <path d="M7 5h2v2H7V5zm4 0h2v2h-2V5zm4 0h2v2h-2V5zm-8 4h2v2H7V9zm4 0h2v2h-2V9zm4 0h2v2h-2V9zm-8 4h2v2H7v-2zm4 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-8 4h10v2H7v-2z" fill="white"/>
+</svg>

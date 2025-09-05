@@ -1,47 +1,1058 @@
-/* 
- * LLM Assistant - Atlassian-inspired Stylesheet
- */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ app_title }}</title>
+<!-- Favicon -->
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<!-- Fonts -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- CSS -->
+<link rel="stylesheet" href="/static/css/styles.css">
+<link rel="stylesheet" href="/static/css/loading.css">
+<!-- Syntax highlighting -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/terraform.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.2.12/marked.min.js"></script>
+</head>
+<body>
+<!-- Loading Overlay -->
+<div id="loading-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255,255,255,0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.3s ease;">
+<div class="loading-container" style="text-align: center; max-width: 400px; width: 90%;">
+<div style="margin-bottom: 30px;">
+<img src="/static/favicon.svg" alt="Logo" width="48" height="48" style="margin-bottom: 15px;">
+<h2 style="margin: 0; color: #333; font-size: 24px;">{{ app_title }}</h2>
+<p style="margin-top: 5px; color: #666; font-size: 14px;">{{ active_model }}</p>
+</div>
 
-:root {
-    /* Atlassian color palette */
-    --color-primary: #0052CC;         /* Atlassian Blue */
-    --color-primary-light: #4C9AFF;  /* Atlassian Light Blue */
-    --color-primary-dark: #0747A6;   /* Atlassian Dark Blue */
-    --color-secondary: #6554C0;      /* Atlassian Purple */
-    --color-success: #36B37E;        /* Atlassian Green */
-    --color-warning: #FFAB00;        /* Atlassian Yellow/Orange */
-    --color-danger: #FF5630;         /* Atlassian Red */
-    --color-info: #00B8D9;           /* Atlassian Teal */
+<div id="loading-spinner" style="border: 4px solid #f3f3f3; border-top: 4px solid #5D4FE0; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
 
-    /* Neutral colors - Atlassian style */
-    --color-background: #F4F5F7;     /* Atlassian Light gray background */
-    --color-surface: #FFFFFF;        /* White */
-    --color-border: #DFE1E6;         /* Atlassian Border color */
+<p id="loading-status" style="margin: 10px 0; font-size: 16px; color: #333;">Initializing {{ app_title }}</p>
+<p id="loading-info" style="margin: 5px 0; font-size: 14px; color: #666;"></p>
+</div>
+</div>
 
-    /* Text colors - Atlassian style */
-    --color-text-primary: #172B4D;   /* Atlassian Dark text */
-    --color-text-secondary: #6B778C; /* Atlassian Medium gray text */
-    --color-text-tertiary: #97A0AF;  /* Atlassian Light gray text */
+<div class="app-container">
+<!-- Sidebar -->
+<aside class="sidebar">
+<div class="sidebar-header">
+<div class="app-logo">
+<img src="/static/favicon.svg" alt="Logo" width="24" height="24">
+<h2>{{ app_title }}</h2>
+</div>
+</div>
 
-    /* Accent colors */
-    --color-mention: #FFBDAD;        /* Atlassian mention color */
-    --color-subtle-bg: #F4F5F7;      /* Atlassian subtle background */
-    --color-accent-red: #FF5630;     /* Atlassian accent red */
-    --color-accent-green: #36B37E;   /* Atlassian accent green */
-    --color-accent-purple: #6554C0;  /* Atlassian accent purple */
+<nav class="sidebar-nav">
+<!-- Project Upload Section -->
+<div class="nav-section">
+<h3 class="nav-heading">Upload Options</h3>
+<div class="upload-section">
+<!-- File upload - multiple files or archives -->
+<input
+ type="file"
+id="file-upload"
+multiple
+accept=".zip,.tar,.gz,.tgz,.tf,.hcl,.yml,.yaml,.py,.json,.md,.txt,.sh,.ps1,.dockerfile,.env"
+style="display: none;">
 
-    /* Component variables */
-    --sidebar-width: 240px;           /* Slightly narrower for Jira look */
-    --header-height: 56px;            /* Standard Jira header height */
-    --border-radius-sm: 3px;          /* Atlassian small radius */
-    --border-radius: 3px;             /* Atlassian standard radius */
-    --border-radius-lg: 3px;          /* Atlassian keeps radius consistent */
-    --shadow-sm: 0 1px 1px rgba(9, 30, 66, 0.13);
-    --shadow: 0 1px 3px rgba(9, 30, 66, 0.13);
-    --shadow-lg: 0 2px 6px rgba(9, 30, 66, 0.13), 0 4px 8px rgba(9, 30, 66, 0.13);
-    --shadow-dropdown: 0 4px 8px -2px rgba(9, 30, 66, 0.25), 0 0 1px rgba(9, 30, 66, 0.31);
-    --transition: 0.2s ease-in-out;
+<!-- Folder upload - entire directories -->
+<input
+ type="file"
+id="folder-upload"
+webkitdirectory
+style="display: none;">
 
-    /* Font variables */
-    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+<button onclick="triggerFileUpload()" class="upload-btn files-btn">
+<i class="fa-solid fa-file-upload"></i> Upload Files
+</button>
+<button onclick="triggerFolderUpload()" class="upload-btn folder-btn">
+<i class="fa-solid fa-folder-plus"></i> Upload Project Folder
+</button>
+<div class="upload-help">
+<small>Files: Multiple files or ZIP archives<br>
+                                             Folder: Complete VS Code/IntelliJ projects</small>
+</div>
+<div id="upload-status" class="upload-status"></div>
+</div>
+</div>
+
+<!-- Current Project Section -->
+<div class="nav-section">
+<h3 class="nav-heading">Current Project</h3>
+<div id="project-info" class="project-info">
+                                           No project loaded
+</div>
+<div id="project-actions" class="project-actions" style="display: none;">
+<button onclick="analyzeProject('security')" class="project-action-btn">
+<i class="fa-solid fa-shield-alt"></i> Security Analysis
+</button>
+<button onclick="analyzeProject('optimization')" class="project-action-btn">
+<i class="fa-solid fa-tachometer-alt"></i> Optimization
+</button>
+<button onclick="showProjectFiles()" class="project-action-btn">
+<i class="fa-solid fa-folder-open"></i> View Files
+</button>
+<button onclick="getRecentChanges()" class="project-action-btn">
+<i class="fa-solid fa-history"></i> Recent Changes
+</button>
+</div>
+</div>
+
+<!-- System Section -->
+<div class="nav-section">
+<h3 class="nav-heading">System</h3>
+<div class="system-info">
+<div class="info-row">
+<span class="info-label">Model:</span>
+<span id="model-name" class="info-value">{{ active_model }}</span>
+</div>
+<div class="info-row">
+<span class="info-label">Status:</span>
+<span id="system-status" class="info-value">
+<span id="status-indicator" class="status-indicator"></span>
+<span id="status-text">Checking...</span>
+</span>
+</div>
+</div>
+</div>
+</nav>
+</aside>
+
+<!-- Main Content -->
+<main class="main-content">
+<header class="main-header">
+<div class="header-content">
+<h1>{{ app_title }}</h1>
+<p class="header-description">Ask questions about Terraform, AWS, or infrastructure as code</p>
+</div>
+</header>
+
+<!-- Chat Area -->
+<div class="chat-container">
+<div id="chat-messages" class="chat-messages">
+<div class="welcome-screen">
+<div class="welcome-header">
+<h2>Welcome to {{ app_title }}</h2>
+<p>Your AI companion for infrastructure and cloud architecture</p>
+</div>
+</div>
+</div>
+
+<!-- Input Area -->
+<div class="chat-input-area">
+<div class="input-container">
+<textarea id="message-input" placeholder="Ask about Terraform, AWS, or infrastructure..." rows="2"></textarea>
+<button id="send-button" class="btn btn-primary btn-send" onclick="sendMessage()">
+<i class="fa-solid fa-paper-plane"></i>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+
+<style>
+     /* Force single column layout - override any inherited CSS */
+ * {
+     column-count: unset !important;
+     column-width: unset !important;
+     columns: none !important;
+ }
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
+
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.status-ok { background-color: #00b300; }
+.status-loading { background-color: #ff9900; }
+.status-error { background-color: #ff3300; }
+
+.nav-section {
+    margin-bottom: 20px;
+    padding: 0 15px;
+}
+
+.nav-heading {
+    font-size: 12px;
+    font-weight: bold;
+    color: #666;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.upload-section {
+    padding: 10px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.upload-btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 13px;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.files-btn {
+    background: #5D4FE0;
+}
+
+.files-btn:hover {
+    background: #4834C7;
+}
+
+.folder-btn {
+    background: #7C3AED;
+}
+
+.folder-btn:hover {
+    background: #6D28D9;
+}
+
+.upload-help {
+    font-size: 10px;
+    color: #666;
+    text-align: center;
+    padding: 5px 0;
+    line-height: 1.3;
+}
+
+.upload-status {
+    font-size: 12px;
+    color: #666;
+    min-height: 18px;
+    text-align: center;
+}
+
+.project-info {
+    font-size: 12px;
+    color: #666;
+    padding: 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.project-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.project-action-btn {
+    width: 100%;
+    padding: 8px;
+    font-size: 11px;
+    background: none;
+    border: 1px solid #5D4FE0;
+    color: #5D4FE0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.project-action-btn:hover {
+    background: #5D4FE0;
+    color: white;
+}
+
+.system-info {
+    font-size: 12px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.info-label {
+    color: #666;
+}
+
+.info-value {
+    color: #333;
+    font-weight: 500;
+}
+
+/* Basic layout styles if not defined in external CSS */
+.app-container {
+    display: flex;
+    height: 100vh;
+}
+
+.sidebar {
+    width: 280px;
+    background: #ffffff;
+    border-right: 1px solid #e1e5e9;
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    padding: 20px 15px;
+    border-bottom: 1px solid #e1e5e9;
+}
+
+.app-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.app-logo h2 {
+    margin: 0;
+    font-size: 16px;
+    color: #172b4d;
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-header {
+    padding: 20px;
+    border-bottom: 1px solid #e1e5e9;
+    background: #ffffff;
+}
+
+.header-content h1 {
+    margin: 0;
+    font-size: 24px;
+    color: #172b4d;
+}
+
+.header-description {
+    margin: 5px 0 0 0;
+    color: #5e6c84;
+    font-size: 14px;
+}
+
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+
+.welcome-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    max-width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.welcome-header {
+    text-align: center;
+    padding: 40px 20px;
+    width: 100%;
+    max-width: 800px;
+}
+
+.welcome-header h2 {
+    margin: 0 0 10px 0;
+    color: #172b4d;
+}
+
+.welcome-header p {
+    margin: 0;
+    color: #5e6c84;
+}
+
+.chat-input-area {
+    border-top: 1px solid #e1e5e9;
+    padding-top: 20px;
+}
+
+.input-container {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+#message-input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #dfe1e6;
+    border-radius: 6px;
+    font-family: inherit;
+    resize: none;
+    min-height: 44px;
+    max-height: 120px;
+}
+
+#send-button {
+    padding: 12px 16px;
+    background: #5D4FE0;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    height: 44px;
+}
+
+#send-button:hover:not(:disabled) {
+    background: #4834C7;
+}
+
+#send-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.user-message {
+    background: #e3f2fd;
+    margin-left: 20%;
+}
+
+.assistant-message {
+    background: #f5f5f5;
+    margin-right: 20%;
+}
+</style>
+
+<script>
+ let chatHistory = [];
+let currentProjectSession = null;
+let changeTrackingActive = false;
+
+// Simple test first
+   console.log('JavaScript is loading...');
+
+// Initialize app when page loads
+   document.addEventListener('DOMContentLoaded', function() {
+console.log('DOM loaded, initializing app...');
+console.log('UPLOAD DEBUG: Looking for upload elements');
+
+// Immediate check for upload elements
+const fileInput = document.getElementById('file-upload');
+    const folderInput = document.getElementById('folder-upload');
+
+console.log('UPLOAD DEBUG: File input element:', fileInput);
+console.log('UPLOAD DEBUG: Folder input element:', folderInput);
+
+// Simple setup without try-catch to see actual errors
+if (fileInput) {
+console.log('UPLOAD DEBUG: Adding file input listener');
+fileInput.addEventListener('change', handleFileUpload);
+} else {
+      console.error('UPLOAD DEBUG: File input not found!');
+  }
+
+    if (folderInput) {
+console.log('UPLOAD DEBUG: Adding folder input listener');
+folderInput.addEventListener('change', handleFolderUpload);
+} else {
+      console.error('UPLOAD DEBUG: Folder input not found!');
+  }
+
+console.log('UPLOAD DEBUG: Setup complete, calling initializeApp');
+initializeApp();
+});
+
+async function initializeApp() {
+console.log('Starting app initialization...');
+
+// Check model status immediately
+await checkModelStatus();
+
+// Set up periodic status checks (less frequent)
+setInterval(checkModelStatus, 3000);
+
+// Focus the input field
+document.getElementById('message-input').focus();
+
+// Add enhanced welcome message
+addWelcomeMessageWithTracking();
+}
+
+function addWelcomeMessageWithTracking() {
+    const welcomeMessage = `Welcome to the Terraform LLM Assistant! I can now track your file changes in real-time and provide context-aware assistance.
+
+    **What I can do:**
+- Analyze your infrastructure code and configurations
+- Track file changes as you edit them
+- Provide insights about recent modifications
+- Suggest improvements based on your edit patterns
+- Help with Terraform, AWS, Ansible, and more
+
+**Try these example prompts:**
+- "Review my recent changes"
+- "Are there any issues with my latest edits?"
+- "How can I improve the files I just modified?"
+- "What best practices should I follow for the changes I made?"
+
+Upload a project to get started, then use the file browser to make some edits and see the change tracking in action!`;
+
+addMessage('assistant', welcomeMessage);
+}
+
+function triggerFileUpload() {
+console.log('=== FILE UPLOAD BUTTON CLICKED ===');
+
+// Try to find the input element
+const fileInput = document.getElementById('file-upload');
+
+    if (!fileInput) {
+console.error('File input element NOT FOUND!');
+alert('File input element not found. This is a bug.');
+    return;
+}
+
+console.log('File input element found:', fileInput);
+console.log('File input attributes:', {
+    type: fileInput.type,
+    multiple: fileInput.multiple,
+    accept: fileInput.accept,
+    webkitdirectory: fileInput.hasAttribute('webkitdirectory')
+});
+
+// Trigger the click
+try {
+fileInput.click();
+console.log('File input click triggered');
+} catch (error) {
+console.error('Error clicking file input:', error);
+}
+}
+
+function triggerFolderUpload() {
+console.log('=== FOLDER UPLOAD BUTTON CLICKED ===');
+
+// Try to find the input element
+const folderInput = document.getElementById('folder-upload');
+
+    if (!folderInput) {
+console.error('Folder input element NOT FOUND!');
+alert('Folder input element not found. This is a bug.');
+    return;
+}
+
+console.log('Folder input element found:', folderInput);
+console.log('Folder input attributes:', {
+    type: folderInput.type,
+    webkitdirectory: folderInput.hasAttribute('webkitdirectory'),
+    webkitdirectoryValue: folderInput.getAttribute('webkitdirectory')
+});
+
+// Check browser support
+if (!('webkitdirectory' in document.createElement('input'))) {
+console.error('Browser does not support webkitdirectory');
+alert('Your browser does not support folder upload. Please use Chrome or Edge.');
+    return;
+}
+
+// Trigger the click
+try {
+folderInput.click();
+console.log('Folder input click triggered');
+} catch (error) {
+console.error('Error clicking folder input:', error);
+}
+}
+
+async function handleFileUpload(event) {
+console.log('File upload triggered, files:', event.target.files.length);
+    const files = event.target.files;
+    if (!files.length) return;
+    await processUpload(files, 'files');
+event.target.value = '';
+}
+
+async function handleFolderUpload(event) {
+console.log('Folder upload triggered, files:', event.target.files.length);
+    const files = event.target.files;
+    if (!files.length) return;
+    await processUpload(files, 'folder');
+event.target.value = '';
+}
+
+async function processUpload(files, uploadType) {
+    const uploadStatus = document.getElementById('upload-status');
+    const fileCount = files.length;
+
+console.log(`Processing ${uploadType} upload with ${fileCount} files`);
+
+// Show different messages based on upload type
+if (uploadType === 'folder') {
+uploadStatus.textContent = `Uploading project folder (${fileCount} files)...`;
+} else {
+      uploadStatus.textContent = `Uploading ${fileCount} file${fileCount > 1 ? 's' : ''}...`;
+  }
+uploadStatus.style.color = '#5D4FE0';
+
+try {
+    const formData = new FormData();
+
+// Debug: log file information
+for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    console.log(`File ${i}: ${file.name}, Path: ${file.webkitRelativePath || 'none'}, Size: ${file.size}`);
+}
+
+// Add all files to FormData
+for (let file of files) {
+// For folder uploads, preserve the relative path
+if (uploadType === 'folder' && file.webkitRelativePath) {
+// Use webkitRelativePath to maintain directory structure
+formData.append('files', file, file.webkitRelativePath);
+    console.log(`Added folder file: ${file.webkitRelativePath}`);
+} else {
+      formData.append('files', file);
+      console.log(`Added individual file: ${file.name}`);
+  }
+}
+
+// Add metadata about upload type
+formData.append('upload_type', uploadType);
+
+    console.log('Sending upload request...');
+    const response = await fetch('/api/upload-project', {
+    method: 'POST',
+    body: formData
+});
+
+console.log('Upload response status:', response.status);
+
+if (!response.ok) {
+const responseText = await response.text();
+console.error('Upload failed with status:', response.status);
+throw new Error(`Upload failed: ${response.status} - ${responseText.substring(0, 200)}`);
+}
+
+const result = await response.json();
+console.log('Upload response:', result);
+
+if (result.success) {
+currentProjectSession = result.session_id;
+updateProjectInfo(result.analysis);
+
+let message;
+if (uploadType === 'folder') {
+// Extract project name from the first file's path
+const firstFile = files[0];
+const projectName = firstFile.webkitRelativePath ?
+firstFile.webkitRelativePath.split('/')[0] : 'Project';
+message = `✅ Uploaded "${projectName}" folder (${fileCount} files)`;
+} else {
+message = `✅ Uploaded ${fileCount} file${fileCount > 1 ? 's' : ''}`;
+}
+
+uploadStatus.textContent = message;
+uploadStatus.style.color = '#00b300';
+
+// Add system message about upload with change tracking info
+const projectTypes = result.analysis.project_type.join(', ') || 'general';
+const uploadTypeText = uploadType === 'folder' ? 'project folder' : 'files';
+
+addMessage('assistant', `Project ${uploadTypeText} uploaded successfully! I detected a **${projectTypes}** project with ${result.analysis.files.length} files.
+
+**Change tracking is now active** - I'll monitor all file modifications and can provide insights about your edits. The project structure has been analyzed and I can now provide context-aware assistance.
+
+Try making some changes in the file browser, then ask me about them!`);
+} else {
+uploadStatus.textContent = `❌ Error: ${result.error}`;
+uploadStatus.style.color = '#ff3300';
+}
+} catch (error) {
+console.error('Upload error:', error);
+uploadStatus.textContent = `❌ Upload failed: ${error.message}`;
+uploadStatus.style.color = '#ff3300';
+}
+}
+
+function updateProjectInfo(analysis) {
+    const projectInfo = document.getElementById('project-info');
+    const projectActions = document.getElementById('project-actions');
+
+projectInfo.innerHTML = `
+<div><strong>Type:</strong> ${analysis.project_type.join(', ')}</div>
+<div><strong>Files:</strong> ${analysis.files.length}</div>
+<div><strong>Technologies:</strong> ${analysis.technologies.join(', ') || 'None detected'}</div>
+<div style="color: #00b300; font-size: 11px; margin-top: 5px;">
+<i class="fa-solid fa-eye"></i> Change tracking active
+</div>
+`;
+
+projectActions.innerHTML = `
+<button onclick="analyzeProject('security')" class="project-action-btn">
+<i class="fa-solid fa-shield-alt"></i> Security Analysis
+</button>
+<button onclick="analyzeProject('optimization')" class="project-action-btn">
+<i class="fa-solid fa-tachometer-alt"></i> Optimization
+</button>
+<button onclick="showProjectFiles()" class="project-action-btn">
+<i class="fa-solid fa-folder-open"></i> View Files
+</button>
+<button onclick="getRecentChanges()" class="project-action-btn">
+<i class="fa-solid fa-history"></i> Recent Changes
+</button>
+`;
+
+projectActions.style.display = 'flex';
+    changeTrackingActive = true;
+}
+
+// Add a function to get recent changes
+   async function getRecentChanges() {
+    if (!currentProjectSession) {
+addMessage('assistant', 'No project loaded to show changes for.');
+    return;
+}
+
+try {
+    const response = await fetch(`/api/project/${currentProjectSession}/changes?limit=10`);
+    const result = await response.json();
+
+    if (result.success) {
+    if (result.changes.length === 0) {
+addMessage('assistant', 'No file changes have been made yet. Start editing files in the file browser to see change tracking in action!');
+} else {
+    let changesMessage = `## Recent File Changes (${result.total_changes} total)\n\n`;
+    changesMessage += `${result.summary}\n\n`;
+
+    if (result.changes.length > 0) {
+    changesMessage += "**Detailed Change Log:**\n";
+    result.changes.forEach(change => {
+    const timestamp = new Date(change.timestamp).toLocaleString();
+    changesMessage += `- **${change.file_path}** (${change.change_type})\n`;
+    changesMessage += `  ${change.diff_summary} at ${timestamp}\n\n`;
+});
+}
+
+addMessage('assistant', changesMessage);
+}
+} else {
+  addMessage('assistant', `Error getting changes: ${result.error}`);
+  }
+} catch (error) {
+addMessage('assistant', `Error: ${error.message}`);
+}
+}
+
+async function analyzeProject(focus = 'general') {
+    if (!currentProjectSession) {
+addMessage('assistant', 'Please upload a project first before requesting analysis.');
+    return;
+}
+
+    const loadingId = 'analysis-' + Date.now();
+addLoadingIndicator(loadingId);
+
+try {
+    const response = await fetch(`/api/project/${currentProjectSession}/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ focus: focus })
+});
+
+const result = await response.json();
+removeLoadingIndicator(loadingId);
+
+if (result.success) {
+const analysisType = focus.charAt(0).toUpperCase() + focus.slice(1);
+addMessage('assistant', `## ${analysisType} Analysis\n\n${result.analysis}`);
+} else {
+addMessage('assistant', `Analysis failed: ${result.error}`);
+}
+} catch (error) {
+removeLoadingIndicator(loadingId);
+addMessage('assistant', `Analysis error: ${error.message}`);
+}
+}
+
+async function showProjectFiles() {
+    if (!currentProjectSession) {
+addMessage('assistant', 'Please upload a project first.');
+    return;
+}
+
+// Open file browser in a new window
+const filesBrowserUrl = `/file-browser?session=${currentProjectSession}`;
+window.open(filesBrowserUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+
+// Also add a message to the chat
+addMessage('assistant', 'Opening file browser in a new window. You can now browse, view, and edit your project files with syntax highlighting and save functionality.');
+}
+
+function formatFileTree(tree, indent = '') {
+    let result = '';
+    for (const [key, value] of Object.entries(tree)) {
+    result += indent + key + '\n';
+    if (value && typeof value === 'object') {
+    result += formatFileTree(value, indent + '  ');
+}
+}
+    return result;
+}
+
+// Enhanced sendMessage to handle project context
+   function sendMessage() {
+    const messageInput = document.getElementById('message-input');
+    const message = messageInput.value.trim();
+
+    if (message === '') return;
+
+addMessage('user', message);
+messageInput.value = '';
+
+// Add loading indicator
+const loadingId = 'loading-' + Date.now();
+addLoadingIndicator(loadingId);
+
+// Enhanced prompt with project context
+let enhancedMessage = message;
+    if (currentProjectSession) {
+    enhancedMessage = `[Project Context Available - Session: ${currentProjectSession}]\n\n${message}`;
+}
+
+// Send to backend with project session for change tracking
+fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+    message: enhancedMessage,
+    project_session: currentProjectSession  // This enables change tracking context
+})
+})
+.then(response => response.json())
+.then(data => {
+removeLoadingIndicator(loadingId);
+    if (data.success) {
+// Add a subtle indicator if the response was enhanced with change context
+let responseMessage = data.response;
+    if (data.context_enhanced && changeTrackingActive) {
+    responseMessage += '\n\n*🔍 Response enhanced with recent file changes*';
+}
+addMessage('assistant', responseMessage);
+} else {
+  addMessage('assistant', `Error: ${data.error || 'Unknown error occurred'}`);
+  }
+})
+.catch(error => {
+removeLoadingIndicator(loadingId);
+addMessage('assistant', `Error: ${error.message}`);
+});
+}
+
+async function checkModelStatus() {
+try {
+    console.log('Checking model status...');
+    const response = await fetch('/api/model-status');
+    const data = await response.json();
+
+    console.log('Status response:', data);
+
+updateStatusIndicators(data);
+
+// Handle status
+if (data.actual_status === 'ok') {
+    console.log('Model is ready, hiding loading overlay');
+hideLoadingOverlay();
+} else {
+      console.log('Model not ready, status:', data.actual_status);
+  updateLoadingStatus(data.actual_status, data);
+  }
+
+} catch (error) {
+console.error('Error checking model status:', error);
+updateLoadingStatus('error', { error: error.message });
+}
+}
+
+function updateStatusIndicators(data) {
+    const statusIndicator = document.getElementById('status-indicator');
+    const statusText = document.getElementById('status-text');
+    const sendButton = document.getElementById('send-button');
+
+    if (!statusIndicator || !statusText) return;
+
+// Reset classes
+statusIndicator.className = 'status-indicator';
+
+    if (data.actual_status === 'ok') {
+statusIndicator.classList.add('status-ok');
+statusText.textContent = 'Ready';
+    if (sendButton) sendButton.disabled = false;
+} else if (data.actual_status === 'downloading') {
+statusIndicator.classList.add('status-loading');
+statusText.textContent = 'Downloading...';
+    if (sendButton) sendButton.disabled = true;
+} else if (data.actual_status === 'loading') {
+statusIndicator.classList.add('status-loading');
+statusText.textContent = 'Loading...';
+    if (sendButton) sendButton.disabled = true;
+} else {
+      statusIndicator.classList.add('status-error');
+      statusText.textContent = 'Error';
+      if (sendButton) sendButton.disabled = true;
+  }
+}
+
+function updateLoadingStatus(status, data) {
+    const loadingStatus = document.getElementById('loading-status');
+    const loadingInfo = document.getElementById('loading-info');
+
+    if (status === 'ok') {
+loadingStatus.textContent = 'Ready!';
+loadingInfo.textContent = 'Starting application...';
+} else if (status === 'downloading') {
+loadingStatus.textContent = 'Downloading model...';
+loadingInfo.textContent = 'This may take a few minutes';
+} else if (status === 'loading') {
+loadingStatus.textContent = 'Loading model...';
+loadingInfo.textContent = 'Please wait...';
+} else if (status === 'error') {
+loadingStatus.textContent = 'Service unavailable';
+loadingInfo.textContent = 'Please check that Ollama is running';
+}
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay && overlay.style.display !== 'none') {
+console.log('Hiding loading overlay');
+overlay.style.opacity = '0';
+setTimeout(() => {
+overlay.style.display = 'none';
+console.log('Loading overlay hidden');
+}, 300);
+}
+}
+
+function addMessage(sender, content) {
+chatHistory.push({ sender, content });
+
+    const chatMessages = document.getElementById('chat-messages');
+    const messageDiv = document.createElement('div');
+messageDiv.className = `message ${sender}-message`;
+
+    if (sender === 'assistant') {
+// Use marked for markdown rendering with better Firefox compatibility
+if (typeof marked !== 'undefined') {
+try {
+    marked.setOptions({
+    highlight: function(code, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+    return hljs.highlight(code, { language: lang }).value;
+}
+    return hljs.highlightAuto(code).value;
+},
+breaks: true,
+gfm: true,
+sanitize: false,
+smartLists: true,
+smartypants: false
+});
+    messageDiv.innerHTML = marked.parse(content);
+} catch (error) {
+console.error('Markdown parsing error:', error);
+// Fallback to plain text with basic formatting
+messageDiv.innerHTML = content
+.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+.replace(/\*(.*?)\*/g, '<em>$1</em>')
+.replace(/\n/g, '<br>');
+}
+} else {
+  // Fallback if marked is not available
+  messageDiv.innerHTML = content
+  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+  .replace(/\*(.*?)\*/g, '<em>$1</em>')
+  .replace(/\n/g, '<br>');
+  }
+} else {
+      messageDiv.textContent = content;
+  }
+
+chatMessages.appendChild(messageDiv);
+chatMessages.scrollTop = chatMessages.scrollHeight;
+
+// Force reflow for Firefox
+if (sender === 'assistant') {
+messageDiv.offsetHeight;
+}
+}
+
+function addLoadingIndicator(id) {
+    const chatMessages = document.getElementById('chat-messages');
+    const loadingDiv = document.createElement('div');
+loadingDiv.id = id;
+loadingDiv.className = 'message assistant-message';
+loadingDiv.innerHTML = '<div style="opacity: 0.7;">Thinking...</div>';
+chatMessages.appendChild(loadingDiv);
+chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function removeLoadingIndicator(id) {
+    const loadingDiv = document.getElementById(id);
+    if (loadingDiv) loadingDiv.remove();
+}
+
+// Auto-resize textarea
+   document.getElementById('message-input').addEventListener('input', function() {
+this.style.height = 'auto';
+this.style.height = this.scrollHeight + 'px';
+});
+
+// Handle Enter key
+   document.getElementById('message-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+e.preventDefault();
+sendMessage();
+}
+});
+
+// Force hide overlay after 15 seconds as backup
+setTimeout(() => {
+                   const overlay = document.getElementById('loading-overlay');
+                   if (overlay && overlay.style.display !== 'none') {
+                   console.log('Force hiding overlay after timeout');
+               hideLoadingOverlay();
+               }
+               }, 15000);
+</script>
+</body>
+</html>

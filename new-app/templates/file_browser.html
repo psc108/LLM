@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Browser - {{ app_title }}</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #3a3a3a;
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8b8;
+            --text-muted: #888888;
+            --border-color: #444444;
+            --accent-color: #5D4FE0;
+            --accent-hover: #4834C7;
+            --success-color: #00b300;
+            --warning-color: #ff9900;
+            --error-color: #ff3300;
+            --file-hover: #404040;
+            --folder-color: #6eb7ff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .file-browser-container {
+            display: flex;
+            height: 100vh;
+            background-color: var(--bg-primary);
+        }
+
+        /* Sidebar File Tree */
+        .file-tree-panel {
+            width: 350px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .file-tree-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-tertiary);
+        }
+
+        .file-tree-header h3 {
+            color: var(--text-primary);
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .project-info {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .file-tree {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .file-item, .folder-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-bottom: 2px;
+            transition: background-color 0.2s;
+            font-size: 14px;
+            user-select: none;
+        }
+
+        .file-item:hover, .folder-item:hover {
+            background-color: var(--file-hover);
+        }
+
+        .file-item.selected {
+            background-color: var(--accent-color);
+        }
+
+        .folder-item.expanded {
+            background-color: var(--bg-tertiary);
+        }
+
+        .file-icon, .folder-icon {
+            margin-right: 8px;
+            width: 16px;
+            text-align: center;
+        }
+
+        .folder-icon {
+            color: var(--folder-color);
+        }
+
+        .file-icon {
+            color: var(--text-secondary);
+        }
+
+        .folder-toggle {
+            margin-right: 4px;
+            width: 12px;
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .folder-children {
+            margin-left: 20px;
+            border-left: 1px dotted var(--border-color);
+            padding-left: 10px;
+        }
+
+        /* Main Editor Area */
+        .editor-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-header {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .file-path {
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--file-hover);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .editor-content {
+            flex: 1;
+            position: relative;
+        }
+
+        .code-editor {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            border: none;
+            padding: 20px;
+            font-family: 'Courier New', Consolas, Monaco, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            tab-size: 4;
+        }
+
+        .code-editor::placeholder {
+            color: var(--text-muted);
+        }
+
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .welcome-screen i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: var(--accent-color);
+        }
+
+        .status-bar {
+            background-color: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            padding: 8px 20px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-info {
+            display: flex;
+            gap: 20px;
+        }
+
+        .loading-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent-color);
+        }
+
+        .spinner {
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--border-color);
+            border-top: 2px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .file-modified {
+            color: var(--warning-color);
+        }
+
+        .save-status {
+            font-weight: 500;
+        }
+
+        .save-status.saved {
+            color: var(--success-color);
+        }
+
+        .save-status.unsaved {
+            color: var(--warning-color);
+        }
+
+        .save-status.error {
+            color: var(--error-color);
+        }
+
+        /* File type icons */
+        .file-item .file-icon.terraform { color: #7b42bc; }
+        .file-item .file-icon.python { color: #3776ab; }
+        .file-item .file-icon.yaml { color: #cb171e; }
+        .file-item .file-icon.json { color: #f1c40f; }
+        .file-item .file-icon.markdown { color: #083fa1; }
+        .file-item .file-icon.shell { color: #89e051; }
+        .file-item .file-icon.docker { color: #2496ed; }
+    </style>
+</head>
+<body>
+<div class="file-browser-container">
+    <!-- File Tree Panel -->
+    <div class="file-tree-panel">
+        <div class="file-tree-header">
+            <h3 id="project-title">Project Files</h3>
+            <div class="project-info">
+                <div>Type: <span id="project-type">-</span></div>
+                <div>Files: <span id="file-count">0</span></div>
+            </div>
+        </div>
+        <div class="file-tree" id="file-tree">
+            <div class="welcome-screen">
+                <i class="fas fa-folder-open"></i>
+                <h3>No Project Loaded</h3>
+                <p>Upload a project to browse files</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Editor Panel -->
+    <div class="editor-panel">
+        <div class="editor-header">
+            <div class="file-path" id="current-file-path">No file selected</div>
+            <div class="editor-actions">
+                <button class="btn btn-secondary" id="refresh-btn" onclick="refreshFileTree()" title="Refresh">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="btn btn-primary" id="save-btn" onclick="saveCurrentFile()" disabled title="Save File">
+                    <i class="fas fa-save"></i> Save
+                </button>
+            </div>
+        </div>
+
+        <div class="editor-content">
+            <div class="welcome-screen" id="editor-welcome">
+                <i class="fas fa-file-code"></i>
+                <h3>File Editor</h3>
+                <p>Select a file from the tree to start editing</p>
+            </div>
+            <textarea
+                    class="code-editor"
+                    id="code-editor"
+                    placeholder="Select a file to edit..."
+                    style="display: none;"
+            ></textarea>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-info">
+                <span id="file-size">-</span>
+                <span id="file-type">-</span>
+                <span id="cursor-position">Line 1, Column 1</span>
+            </div>
+            <div class="save-status" id="save-status">Ready</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentProjectSession = null;
+    let currentFile = null;
+    let fileContent = '';
+    let isModified = false;
+    let projectStructure = null;
+
+    // Initialize the file browser
+    function initializeFileBrowser(sessionId) {
+        currentProjectSession = sessionId;
+        loadProjectFiles();
+    }
+
+    // Load project files from the backend
+    async function loadProjectFiles() {
+        if (!currentProjectSession) {
+            showWelcomeScreen();
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/project/${currentProjectSession}/files`);
+            const result = await response.json();
+
+            if (result.success) {
+                projectStructure = result.structure;
+                updateProjectInfo(result);
+                renderFileTree(result.structure);
+            } else {
+                console.error('Failed to load project files:', result.error);
+                showError('Failed to load project files: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Error loading project files:', error);
+            showError('Error loading project files: ' + error.message);
+        }
+    }
+
+    // Update project information in the header
+    function updateProjectInfo(projectData) {
+        document.getElementById('project-title').textContent = 'Project Files';
+        document.getElementById('project-type').textContent = projectData.project_type.join(', ') || 'Unknown';
+        document.getElementById('file-count').textContent = projectData.files.length;
+    }
+
+    // Render the file tree
+    function renderFileTree(structure) {
+        const fileTree = document.getElementById('file-tree');
+        fileTree.innerHTML = '';
+
+        const rootElement = createTreeElement(structure, '');
+        fileTree.appendChild(rootElement);
+    }
+
+    // Create tree elements recursively
+    function createTreeElement(structure, basePath) {
+        const container = document.createElement('div');
+
+        const sortedEntries = Object.entries(structure).sort(([a, aVal], [b, bVal]) => {
+            // Folders first, then files
+            const aIsFolder = aVal !== null;
+            const bIsFolder = bVal !== null;
+
+            if (aIsFolder && !bIsFolder) return -1;
+            if (!aIsFolder && bIsFolder) return 1;
+            return a.localeCompare(b);
+        });
+
+        for (const [name, value] of sortedEntries) {
+            const fullPath = basePath ? `${basePath}/${name}` : name;
+            const isFolder = value !== null;
+
+            if (isFolder) {
+                // Create folder element
+                const folderDiv = document.createElement('div');
+                folderDiv.className = 'folder-item';
+                folderDiv.onclick = () => toggleFolder(folderDiv);
+
+                const toggle = document.createElement('span');
+                toggle.className = 'folder-toggle';
+                toggle.innerHTML = '<i class="fas fa-chevron-right"></i>';
+
+                const icon = document.createElement('span');
+                icon.className = 'folder-icon';
+                icon.innerHTML = '<i class="fas fa-folder"></i>';
+
+                const text = document.createElement('span');
+                text.textContent = name;
+
+                folderDiv.appendChild(toggle);
+                folderDiv.appendChild(icon);
+                folderDiv.appendChild(text);
+
+                const childrenDiv = document.createElement('div');
+                childrenDiv.className = 'folder-children';
+                childrenDiv.style.display = 'none';
+                childrenDiv.appendChild(createTreeElement(value, fullPath));
+
+                container.appendChild(folderDiv);
+                container.appendChild(childrenDiv);
+            } else {
+                // Create file element
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'file-item';
+                fileDiv.onclick = () => selectFile(fullPath, fileDiv);
+
+                const icon = document.createElement('span');
+                icon.className = `file-icon ${getFileTypeClass(name)}`;
+                icon.innerHTML = getFileIcon(name);
+
+                const text = document.createElement('span');
+                text.textContent = name;
+
+                fileDiv.appendChild(icon);
+                fileDiv.appendChild(text);
+
+                container.appendChild(fileDiv);
+            }
+        }
+
+        return container;
+    }
+
+    // Toggle folder open/closed
+    function toggleFolder(folderElement) {
+        const toggle = folderElement.querySelector('.folder-toggle i');
+        const children = folderElement.nextElementSibling;
+        const icon = folderElement.querySelector('.folder-icon i');
+
+        if (children.style.display === 'none') {
+            children.style.display = 'block';
+            toggle.className = 'fas fa-chevron-down';
+            icon.className = 'fas fa-folder-open';
+            folderElement.classList.add('expanded');
+        } else {
+            children.style.display = 'none';
+            toggle.className = 'fas fa-chevron-right';
+            icon.className = 'fas fa-folder';
+            folderElement.classList.remove('expanded');
+        }
+    }
+
+    // Select and load a file
+    async function selectFile(filePath, fileElement) {
+        // Check if current file is modified
+        if (isModified && !confirm('You have unsaved changes. Are you sure you want to switch files?')) {
+            return;
+        }
+
+        // Update UI selection
+        document.querySelectorAll('.file-item').forEach(el => el.classList.remove('selected'));
+        fileElement.classList.add('selected');
+
+        // Update current file
+        currentFile = filePath;
+        document.getElementById('current-file-path').textContent = filePath;
+
+        // Load file content
+        setLoadingState(true);
+
+        try {
+            const response = await fetch(`/api/project/${currentProjectSession}/file/${encodeURIComponent(filePath)}`);
+            const result = await response.json();
+
+            if (result.success) {
+                fileContent = result.content;
+                showEditor();
+                document.getElementById('code-editor').value = fileContent;
+                updateFileInfo(result);
+                setModified(false);
+            } else {
+                showError('Failed to load file: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Error loading file:', error);
+            showError('Error loading file: ' + error.message);
+        } finally {
+            setLoadingState(false);
+        }
+    }
+
+    // Save current file
+    async function saveCurrentFile() {
+        if (!currentFile || !isModified) return;
+
+        const content = document.getElementById('code-editor').value;
+        setLoadingState(true);
+        updateSaveStatus('Saving...');
+
+        try {
+            const response = await fetch(`/api/project/${currentProjectSession}/file/${encodeURIComponent(currentFile)}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ content: content })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                fileContent = content;
+                setModified(false);
+                updateSaveStatus('Saved', 'saved');
+                setTimeout(() => updateSaveStatus('Ready'), 2000);
+            } else {
+                updateSaveStatus('Save failed', 'error');
+                showError('Failed to save file: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Error saving file:', error);
+            updateSaveStatus('Save failed', 'error');
+            showError('Error saving file: ' + error.message);
+        } finally {
+            setLoadingState(false);
+        }
+    }
+
+    // Refresh file tree
+    async function refreshFileTree() {
+        if (currentProjectSession) {
+            await loadProjectFiles();
+        }
+    }
+
+    // Utility functions
+    function getFileIcon(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+
+        const iconMap = {
+            'tf': '<i class="fas fa-cube"></i>',
+            'hcl': '<i class="fas fa-cube"></i>',
+            'py': '<i class="fab fa-python"></i>',
+            'js': '<i class="fab fa-js-square"></i>',
+            'json': '<i class="fas fa-brackets-curly"></i>',
+            'yml': '<i class="fas fa-file-code"></i>',
+            'yaml': '<i class="fas fa-file-code"></i>',
+            'md': '<i class="fab fa-markdown"></i>',
+            'txt': '<i class="fas fa-file-alt"></i>',
+            'sh': '<i class="fas fa-terminal"></i>',
+            'dockerfile': '<i class="fab fa-docker"></i>',
+            'env': '<i class="fas fa-cog"></i>'
+        };
+
+        return iconMap[ext] || '<i class="fas fa-file"></i>';
+    }
+
+    function getFileTypeClass(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+
+        const classMap = {
+            'tf': 'terraform',
+            'hcl': 'terraform',
+            'py': 'python',
+            'yml': 'yaml',
+            'yaml': 'yaml',
+            'json': 'json',
+            'md': 'markdown',
+            'sh': 'shell',
+            'dockerfile': 'docker'
+        };
+
+        return classMap[ext] || 'default';
+    }
+
+    function showEditor() {
+        document.getElementById('editor-welcome').style.display = 'none';
+        document.getElementById('code-editor').style.display = 'block';
+        document.getElementById('save-btn').disabled = false;
+    }
+
+    function showWelcomeScreen() {
+        document.getElementById('editor-welcome').style.display = 'flex';
+        document.getElementById('code-editor').style.display = 'none';
+        document.getElementById('current-file-path').textContent = 'No file selected';
+        document.getElementById('save-btn').disabled = true;
+        currentFile = null;
+        setModified(false);
+    }
+
+    function setModified(modified) {
+        isModified = modified;
+        document.getElementById('save-btn').disabled = !modified;
+
+        if (modified) {
+            updateSaveStatus('Unsaved changes', 'unsaved');
+        } else {
+            updateSaveStatus('Ready');
+        }
+    }
+
+    function updateSaveStatus(text, className = '') {
+        const statusEl = document.getElementById('save-status');
+        statusEl.textContent = text;
+        statusEl.className = `save-status ${className}`;
+    }
+
+    function updateFileInfo(fileData) {
+        document.getElementById('file-size').textContent = `${fileData.size} bytes`;
+        document.getElementById('file-type').textContent = getFileType(currentFile);
+    }
+
+    function getFileType(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const typeMap = {
+            'tf': 'Terraform',
+            'hcl': 'HCL',
+            'py': 'Python',
+            'js': 'JavaScript',
+            'json': 'JSON',
+            'yml': 'YAML',
+            'yaml': 'YAML',
+            'md': 'Markdown',
+            'txt': 'Text',
+            'sh': 'Shell Script',
+            'dockerfile': 'Dockerfile'
+        };
+        return typeMap[ext] || 'Unknown';
+    }
+
+    function setLoadingState(loading) {
+        const refreshBtn = document.getElementById('refresh-btn');
+        if (loading) {
+            refreshBtn.innerHTML = '<div class="spinner"></div>';
+            refreshBtn.disabled = true;
+        } else {
+            refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            refreshBtn.disabled = false;
+        }
+    }
+
+    function showError(message) {
+        // You could implement a toast notification system here
+        console.error(message);
+        alert(message); // Simple fallback
+    }
+
+    // Event listeners
+    document.getElementById('code-editor').addEventListener('input', function() {
+        const currentContent = this.value;
+        setModified(currentContent !== fileContent);
+    });
+
+    // Track cursor position
+    document.getElementById('code-editor').addEventListener('keyup', updateCursorPosition);
+    document.getElementById('code-editor').addEventListener('click', updateCursorPosition);
+
+    function updateCursorPosition() {
+        const editor = document.getElementById('code-editor');
+        const lines = editor.value.substr(0, editor.selectionStart).split('\n');
+        const line = lines.length;
+        const column = lines[lines.length - 1].length + 1;
+        document.getElementById('cursor-position').textContent = `Line ${line}, Column ${column}`;
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey || e.metaKey) {
+            switch(e.key) {
+                case 's':
+                    e.preventDefault();
+                    saveCurrentFile();
+                    break;
+                case 'r':
+                    e.preventDefault();
+                    refreshFileTree();
+                    break;
+            }
+        }
+    });
+
+    // Tab support in textarea
+    document.getElementById('code-editor').addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = start + 4;
+        }
+    });
+
+    // Get session from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session');
+    if (sessionId) {
+        initializeFileBrowser(sessionId);
+    }
+
+    // Make function available globally for parent window
+    window.initializeFileBrowser = initializeFileBrowser;
+</script>
+</body>
+</html>

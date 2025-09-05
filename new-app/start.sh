@@ -4,6 +4,10 @@ if [ -f "app.py" ]; then
     export DISABLE_AUTO_MODEL_DOWNLOAD=true
     log "Auto model download is disabled to prevent loops"
 
+    # Set environment variable to prevent continuous download checks
+    export DISABLE_AUTO_MODEL_DOWNLOAD=true
+    log "Auto model download is disabled to prevent loops"
+
     if [ -d "venv" ] && [ -f "venv/bin/python" ]; then
         log "Using virtual environment Python to start application"
         venv/bin/python app.py

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Assistant</title>
+    <!-- Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="app-logo">
+                    <i class="fa-solid fa-robot"></i>
+                    <h2>LLM Assistant</h2>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <h3 class="nav-heading">Navigation</h3>
+                    <ul class="nav-list">
+                        <li><a href="#" class="nav-link active"><i class="fa-solid fa-comment"></i> Chat</a></li>
+                        <li><a href="#" class="nav-link"><i class="fa-solid fa-book"></i> Documentation</a></li>
+                        <li><a href="#" class="nav-link"><i class="fa-solid fa-gear"></i> Settings</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <h3 class="nav-heading">System</h3>
+                    <div class="system-info">
+                        <div class="info-row">
+                            <span class="info-label">Model:</span>
+                            <span id="model-name" class="info-value">{{ active_model }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Status:</span>
+                            <span id="system-status" class="info-value">
+                                <span id="status-indicator" class="status-indicator"></span>
+                                <span id="status-text">Checking...</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button id="clear-chat-btn" class="btn btn-secondary btn-sm">
+                    <i class="fa-solid fa-trash"></i> Clear Chat
+                </button>
+                <a href="https://github.com/" target="_blank" class="btn btn-sm btn-link">
+                    <i class="fa-brands fa-github"></i> GitHub
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="main-header">
+                <div class="header-content">
+                    <h1>Infrastructure Assistant</h1>
+                    <p class="header-description">Ask questions about Terraform, AWS, or infrastructure as code</p>
+                </div>
+                <div class="header-actions">
+                    <button id="new-chat-btn" class="btn btn-primary">
+                        <i class="fa-solid fa-plus"></i> New Chat
+                    </button>
+                </div>
+            </header>
+
+            <!-- Chat Area -->
+            <div class="chat-container">
+                <div id="chat-messages" class="chat-messages">
+                    <div class="welcome-screen">
+                        <div class="welcome-header">
+                            <h2>Welcome to LLM Assistant</h2>
+                            <p>Your AI companion for infrastructure and cloud architecture</p>
+                        </div>
+
+                        <div class="examples-grid">
+                            <div class="example-card" onclick="sendExample('Create an S3 bucket with versioning and encryption')">
+                                <div class="example-icon"><i class="fa-solid fa-cube"></i></div>
+                                <div class="example-content">
+                                    <h3>S3 Storage</h3>
+                                    <p>Create an S3 bucket with versioning and encryption</p>
+                                </div>
+                            </div>
+
+                            <div class="example-card" onclick="sendExample('Set up a VPC with public and private subnets')">
+                                <div class="example-icon"><i class="fa-solid fa-network-wired"></i></div>
+                                <div class="example-content">
+                                    <h3>Networking</h3>
+                                    <p>Set up a VPC with public and private subnets</p>
+                                </div>
+                            </div>
+
+                            <div class="example-card" onclick="sendExample('Deploy EC2 instances with autoscaling')">
+                                <div class="example-icon"><i class="fa-solid fa-server"></i></div>
+                                <div class="example-content">
+                                    <h3>Compute</h3>
+                                    <p>Deploy EC2 instances with autoscaling</p>
+                                </div>
+                            </div>
+
+                            <div class="example-card" onclick="sendExample('Create an RDS database with backups and security')">
+                                <div class="example-icon"><i class="fa-solid fa-database"></i></div>
+                                <div class="example-content">
+                                    <h3>Database</h3>
+                                    <p>Create an RDS database with backups and security</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="chat-input-area">
+                    <div class="input-container">
+                        <textarea id="message-input" placeholder="Ask about Terraform, AWS, or infrastructure..."></textarea>
+                        <button id="send-button" class="btn btn-primary btn-send">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="input-footer">
+                        <span id="model-info">{{ active_model }}</span>
+                        <span>•</span>
+                        <button id="reset-button" class="btn btn-sm btn-link">Reset Thread</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Initializing LLM Assistant</p>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

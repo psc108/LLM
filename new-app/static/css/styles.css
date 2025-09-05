@@ -1,0 +1,47 @@
+/* 
+ * LLM Assistant - Atlassian-inspired Stylesheet
+ */
+
+:root {
+    /* Atlassian color palette */
+    --color-primary: #0052CC;         /* Atlassian Blue */
+    --color-primary-light: #4C9AFF;  /* Atlassian Light Blue */
+    --color-primary-dark: #0747A6;   /* Atlassian Dark Blue */
+    --color-secondary: #6554C0;      /* Atlassian Purple */
+    --color-success: #36B37E;        /* Atlassian Green */
+    --color-warning: #FFAB00;        /* Atlassian Yellow/Orange */
+    --color-danger: #FF5630;         /* Atlassian Red */
+    --color-info: #00B8D9;           /* Atlassian Teal */
+
+    /* Neutral colors - Atlassian style */
+    --color-background: #F4F5F7;     /* Atlassian Light gray background */
+    --color-surface: #FFFFFF;        /* White */
+    --color-border: #DFE1E6;         /* Atlassian Border color */
+
+    /* Text colors - Atlassian style */
+    --color-text-primary: #172B4D;   /* Atlassian Dark text */
+    --color-text-secondary: #6B778C; /* Atlassian Medium gray text */
+    --color-text-tertiary: #97A0AF;  /* Atlassian Light gray text */
+
+    /* Accent colors */
+    --color-mention: #FFBDAD;        /* Atlassian mention color */
+    --color-subtle-bg: #F4F5F7;      /* Atlassian subtle background */
+    --color-accent-red: #FF5630;     /* Atlassian accent red */
+    --color-accent-green: #36B37E;   /* Atlassian accent green */
+    --color-accent-purple: #6554C0;  /* Atlassian accent purple */
+
+    /* Component variables */
+    --sidebar-width: 240px;           /* Slightly narrower for Jira look */
+    --header-height: 56px;            /* Standard Jira header height */
+    --border-radius-sm: 3px;          /* Atlassian small radius */
+    --border-radius: 3px;             /* Atlassian standard radius */
+    --border-radius-lg: 3px;          /* Atlassian keeps radius consistent */
+    --shadow-sm: 0 1px 1px rgba(9, 30, 66, 0.13);
+    --shadow: 0 1px 3px rgba(9, 30, 66, 0.13);
+    --shadow-lg: 0 2px 6px rgba(9, 30, 66, 0.13), 0 4px 8px rgba(9, 30, 66, 0.13);
+    --shadow-dropdown: 0 4px 8px -2px rgba(9, 30, 66, 0.25), 0 0 1px rgba(9, 30, 66, 0.31);
+    --transition: 0.2s ease-in-out;
+
+    /* Font variables */
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+}

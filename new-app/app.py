@@ -15,7 +15,7 @@ import hashlib
 from datetime import datetime
 from pathlib import Path
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, redirect
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -474,12 +474,38 @@ def index():
                            active_model=active_model,
                            app_title=app.config['APP_TITLE'])
 
-@app.route('/file-browser')
-def file_browser():
-    """Serve the file browser interface"""
-    return render_template('file_browser.html',
-                           active_model=active_model,
-                           app_title=app.config['APP_TITLE'])
+@app.route('/terraform')
+def terraform():
+    """Terraform tools page."""
+    return '''<!DOCTYPE html>
+<html>
+<head>
+    <title>Terraform Tools</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: system-ui, -apple-system, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto;">
+    <h1 style="color: #172b4d;">Terraform Tools</h1>
+    <p style="color: #5e6c84;">Your Terraform workspace and infrastructure tools</p>
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h2>Welcome to Terraform Tools</h2>
+        <p>Access Terraform documentation and resources.</p>
+    </div>
+    <div style="display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+        <div style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+            <h3>Terraform Documentation</h3>
+            <a href="https://developer.hashicorp.com/terraform" target="_blank">Visit Documentation →</a>
+        </div>
+        <div style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+            <h3>AWS Provider</h3>
+            <a href="https://registry.terraform.io/providers/hashicorp/aws/latest/docs" target="_blank">View Provider Docs →</a>
+        </div>
+    </div>
+    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd;">
+        <a href="/" style="color: #5D4FE0; text-decoration: none;">← Back to LLM Assistant</a>
+    </div>
+</body>
+</html>'''
 
 @app.route('/static/<path:path>')
 def serve_static(path):
@@ -510,6 +536,8 @@ def upload_project():
         os.makedirs(upload_session_dir, exist_ok=True)
 
         uploaded_files = []
+        skipped_files = []  # Initialize skipped files list
+        total_size_mb = 0.0  # Initialize total size counter
         project_dir = upload_session_dir
 
         # Handle folder uploads differently to preserve structure
@@ -519,6 +547,7 @@ def upload_project():
 
             for file in files:
                 if file.filename == '':
+                    skipped_files.append('(empty filename)')
                     continue
 
                 # For folder uploads, the filename should contain the path
@@ -534,6 +563,7 @@ def upload_project():
                             path_parts.append(secured_part)
 
                 if not path_parts:
+                    skipped_files.append(original_filename)
                     continue
 
                 # Create the full file path
@@ -544,8 +574,10 @@ def upload_project():
                 if file_dir:
                     os.makedirs(file_dir, exist_ok=True)
 
-                # Save the file
+                # Save the file and track size
                 file.save(file_path)
+                file_size = os.path.getsize(file_path) if os.path.exists(file_path) else 0
+                total_size_mb += file_size / (1024 * 1024)
                 uploaded_files.append('/'.join(path_parts))
 
                 logger.info(f"Saved folder file: {original_filename} -> {file_path}")
@@ -554,15 +586,19 @@ def upload_project():
             # Handle individual files or archives
             for file in files:
                 if file.filename == '':
+                    skipped_files.append('(empty filename)')
                     continue
 
                 filename = secure_filename(file.filename)
                 if not filename:
+                    skipped_files.append(file.filename)
                     continue
 
                 # Save file
                 file_path = os.path.join(upload_session_dir, filename)
                 file.save(file_path)
+                file_size = os.path.getsize(file_path) if os.path.exists(file_path) else 0
+                total_size_mb += file_size / (1024 * 1024)
                 uploaded_files.append(filename)
 
                 # If it's an archive, extract it
@@ -1760,6 +1796,10 @@ def debug_status():
         return jsonify(debug_info)
     except Exception as e:
         return jsonify({'error': str(e)})
+
+@app.route('/test')
+def test_route():
+    return "Test route works!"
 
 # Run the application
 if __name__ == '__main__':

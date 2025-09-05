@@ -45,6 +45,13 @@
         </div>
 
         <nav class="sidebar-nav">
+            <!-- Terraform Sandbox Link -->
+            <div class="nav-section">
+                <a href="/terraform" class="terraform-sandbox-btn">
+                    <i class="fa-solid fa-cubes"></i> Terraform Sandbox
+                </a>
+            </div>
+
             <!-- Project Upload Section -->
             <div class="nav-section">
                 <h3 class="nav-heading">Upload Options</h3>
@@ -212,6 +219,29 @@
         align-items: center;
         justify-content: center;
         gap: 8px;
+    }
+
+    .terraform-sandbox-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: calc(100% - 30px);
+        margin: 0 15px 15px;
+        padding: 12px;
+        font-size: 14px;
+        font-weight: 500;
+        background: #8C52FF;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.2s;
+    }
+
+    .terraform-sandbox-btn:hover {
+        background: #7340D8;
     }
 
     .files-btn {

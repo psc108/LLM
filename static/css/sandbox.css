@@ -1,0 +1,223 @@
+/* Terraform Sandbox Styles */
+
+.sandbox-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+@media (min-width: 992px) {
+    .sandbox-container {
+        flex-direction: row;
+    }
+
+    .sandbox-editor,
+    .sandbox-output {
+        flex: 1;
+    }
+}
+
+.sandbox-editor, 
+.sandbox-output {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+}
+
+.sandbox-editor h2,
+.sandbox-output h2 {
+    margin-top: 0;
+    color: #333;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+#terraform-config {
+    width: 100%;
+    min-height: 300px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 12px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.button-group {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+.primary-btn,
+.secondary-btn {
+    padding: 10px 16px;
+    border-radius: 4px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.primary-btn {
+    background-color: #0078d4;
+    color: white;
+}
+
+.primary-btn:hover {
+    background-color: #006abc;
+}
+
+.secondary-btn {
+    background-color: #f3f3f3;
+    color: #333;
+}
+
+.secondary-btn:hover {
+    background-color: #e6e6e6;
+}
+
+.result-container {
+    min-height: 300px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    overflow-y: auto;
+}
+
+.placeholder-text {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    margin-top: 100px;
+}
+
+.loading {
+    text-align: center;
+    padding: 30px;
+    color: #666;
+}
+
+.loading:after {
+    content: '.';
+    animation: dots 1.5s steps(5, end) infinite;
+}
+
+@keyframes dots {
+    0%, 20% {
+        color: rgba(0,0,0,0);
+        text-shadow:
+            .3em 0 0 rgba(0,0,0,0),
+            .6em 0 0 rgba(0,0,0,0);
+    }
+    40% {
+        color: #666;
+        text-shadow:
+            .3em 0 0 rgba(0,0,0,0),
+            .6em 0 0 rgba(0,0,0,0);
+    }
+    60% {
+        text-shadow:
+            .3em 0 0 #666,
+            .6em 0 0 rgba(0,0,0,0);
+    }
+    80%, 100% {
+        text-shadow:
+            .3em 0 0 #666,
+            .6em 0 0 #666;
+    }
+}
+
+.analysis-results {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.result-item {
+    border-left: 4px solid #ddd;
+    padding: 12px 15px;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 0 4px 4px 0;
+}
+
+.result-item.error {
+    border-left-color: #d9534f;
+}
+
+.result-item.warning {
+    border-left-color: #f0ad4e;
+}
+
+.result-item.info {
+    border-left-color: #5bc0de;
+}
+
+.result-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.severity-badge {
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.severity-badge.error {
+    background-color: #ffebee;
+    color: #d32f2f;
+}
+
+.severity-badge.warning {
+    background-color: #fff8e1;
+    color: #ff8f00;
+}
+
+.severity-badge.info {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.result-item h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.result-item p {
+    margin: 0 0 10px;
+    color: #555;
+}
+
+.recommendation {
+    background-color: #f0f7ff;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 14px;
+    border-left: 3px solid #0078d4;
+}
+
+.error-message {
+    color: #d32f2f;
+    background-color: #ffebee;
+    padding: 12px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}

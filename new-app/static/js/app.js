@@ -353,97 +353,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return formatted;
     }
 
-// Initialize the app when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
-});
+// App is already initialized in the outer DOMContentLoaded event handler
 
-// Auto-resize textarea as user types
-function autoResizeTextarea() {
-    if (!messageInput) return;
-
-    messageInput.style.height = 'auto';
-    const newHeight = Math.min(messageInput.scrollHeight, 200);
-    messageInput.style.height = newHeight + 'px';
+// These functions are already defined elsewhere in the file
+// and this is a duplicate implementation that's causing issues
 }
 
-// Send a message to the API
-function sendMessage() {
-    if (!messageInput || !messageInput.value.trim()) return;
-
-    const message = messageInput.value.trim();
-    addMessage('user', message);
-    messageInput.value = '';
-    messageInput.style.height = 'auto';
-
-    // Show loading indicator
-    const loadingId = `loading-${Date.now()}`;
-    addLoadingMessage(loadingId);
-
-    // Send request to API
-    fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message })
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Remove loading message
-        const loadingElement = document.getElementById(loadingId);
-        if (loadingElement) loadingElement.remove();
-
-        // Add AI response
-        if (data.success === false) {
-            // Handle error
-            addMessage('error', data.error || 'An error occurred while processing your request.');
-        } else {
-            // Add successful response
-            addMessage('ai', data.response);
-        }
-
-        // Auto-scroll to bottom
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        // Remove loading message
-        const loadingElement = document.getElementById(loadingId);
-        if (loadingElement) loadingElement.remove();
-
-        // Add error message
-        addMessage('error', 'Network error. Please try again later.');
-    });
-}
-
-// Add a loading indicator
-function addLoadingMessage(id) {
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = id;
-    loadingDiv.className = 'message-container ai-message loading';
-    loadingDiv.innerHTML = `
-        <div class="message-avatar">
-            <i class="fa-solid fa-robot"></i>
-        </div>
-        <div class="message-content">
-            <div class="loading-dots">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </div>
-    `;
-
-    // Remove welcome screen if present
-    const welcomeScreen = document.querySelector('.welcome-screen');
-    if (welcomeScreen) {
-        welcomeScreen.remove();
-    }
-
-    chatMessages.appendChild(loadingDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
+// This function is already defined elsewhere in the file
 
 // Add a message to the chat
 function addMessage(type, content) {
@@ -865,34 +781,7 @@ function initializeApp() {
         sendMessage();
     };
 
-    // Reset chat - clear all messages and show welcome screen
-    function resetChat() {
-        if (!chatMessages) return;
-
-        // Clear all messages
-        chatMessages.innerHTML = `
-            <div class="welcome-screen">
-                <div class="welcome-header">
-                    <h2>Welcome to Terraform LLM Assistant</h2>
-                    <p>Your AI companion for infrastructure and cloud architecture</p>
-                </div>
-
-                <div class="examples-grid">
-                    <div class="example-card" onclick="sendExample('Create an S3 bucket with versioning and encryption')">
-                        <div class="example-icon"><i class="fa-solid fa-cube"></i></div>
-                        <div class="example-content">
-                            <h3>S3 Storage</h3>
-                            <p>Create an S3 bucket with versioning and encryption</p>
-                        </div>
-                    </div>
-
-                    <div class="example-card" onclick="sendExample('Set up a VPC with public and private subnets')">
-                        <div class="example-icon"><i class="fa-solid fa-network-wired"></i></div>
-                        <div class="example-content">
-                            <h3>Networking</h3>
-                            <p>Set up a VPC with public and private subnets</p>
-                        </div>
-                    </div>
+    // This resetChat function is already defined elsewhere in the file
 document.addEventListener('DOMContentLoaded', function() {
     // DOM elements
     const chatMessages = document.getElementById('chat-messages');

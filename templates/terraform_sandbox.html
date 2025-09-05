@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terraform Sandbox</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Terraform Sandbox</h1>
+            <p>Experiment with Terraform configurations in a safe environment</p>
+        </header>
+
+        <main class="sandbox-container">
+            <div class="sandbox-editor">
+                <h2>Terraform Configuration</h2>
+                <textarea id="terraform-config" placeholder="# Enter your Terraform configuration here
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_instance" "example" {
+  ami           = "ami-0c55b159cbfafe1f0"
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = "example-instance"
+  }
+}"></textarea>
+                <div class="button-group">
+                    <button id="analyze-btn" class="primary-btn"><i class="fas fa-search"></i> Analyze</button>
+                    <button id="clear-btn" class="secondary-btn"><i class="fas fa-trash"></i> Clear</button>
+                </div>
+            </div>
+
+            <div class="sandbox-output">
+                <h2>Analysis Results</h2>
+                <div id="analysis-result" class="result-container">
+                    <p class="placeholder-text">Enter your Terraform configuration and click 'Analyze' to see results</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/terraform-sandbox.js"></script>
+</body>
+</html>

@@ -237,6 +237,372 @@
     </div>
 </div>
 
+<!-- Template Selection Modal -->
+<div class="modal fade" id="templateSelectionModal" tabindex="-1" aria-labelledby="templateSelectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="templateSelectionModalLabel">Select Template</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Available Templates:</label>
+                    <select class="form-select" id="templateSelect">
+                        <option value="">Loading templates...</option>
+                    </select>
+                </div>
+                <div id="templateDescription" class="alert alert-info" style="display: none;"></div>
+                <input type="hidden" id="selectedWorkspaceId" value="">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-info" onclick="applySelectedTemplate()">Apply Template</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Module Selection Modal -->
+<div class="modal fade" id="moduleSelectionModal" tabindex="-1" aria-labelledby="moduleSelectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="moduleSelectionModalLabel">Browse Terraform Modules</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Available Modules:</label>
+                    <select class="form-select" id="moduleSelect">
+                        <option value="">Loading modules...</option>
+                    </select>
+                </div>
+                <div id="moduleDescription" class="alert alert-info" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="importSelectedModule()">Import Module</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AWS Provider Configuration Modal -->
+<div class="modal fade" id="awsProviderModal" tabindex="-1" aria-labelledby="awsProviderModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="awsProviderModalLabel">AWS Provider Configuration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">AWS Region:</label>
+                    <select class="form-select" id="awsRegion">
+                        <option value="us-east-1">US East (N. Virginia)</option>
+                        <option value="us-east-2">US East (Ohio)</option>
+                        <option value="us-west-1">US West (N. California)</option>
+                        <option value="us-west-2">US West (Oregon)</option>
+                        <option value="eu-west-1">EU (Ireland)</option>
+                        <option value="eu-central-1">EU (Frankfurt)</option>
+                        <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
+                        <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">AWS Profile:</label>
+                    <select class="form-select" id="awsProfile">
+                        <option value="default">default</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Assume Role ARN (optional):</label>
+                    <input type="text" class="form-control" id="assumeRole" placeholder="arn:aws:iam::123456789012:role/TerraformRole">
+                </div>
+                <input type="hidden" id="providerWorkspaceId" value="">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="saveProviderConfig()">Save Configuration</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Backend Configuration Modal -->
+<div class="modal fade" id="backendConfigModal" tabindex="-1" aria-labelledby="backendConfigModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="backendConfigModalLabel">S3 Backend Configuration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">S3 Bucket Name:</label>
+                    <input type="text" class="form-control" id="s3Bucket" placeholder="my-terraform-state-bucket">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">State File Key:</label>
+                    <input type="text" class="form-control" id="stateKey" placeholder="workspace/terraform.tfstate">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">AWS Region:</label>
+                    <select class="form-select" id="backendRegion">
+                        <option value="us-east-1">US East (N. Virginia)</option>
+                        <option value="us-east-2">US East (Ohio)</option>
+                        <option value="us-west-1">US West (N. California)</option>
+                        <option value="us-west-2">US West (Oregon)</option>
+                        <option value="eu-west-1">EU (Ireland)</option>
+                        <option value="eu-central-1">EU (Frankfurt)</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">DynamoDB Table (for locking):</label>
+                    <input type="text" class="form-control" id="dynamodbTable" value="terraform-locks">
+                </div>
+                <input type="hidden" id="backendWorkspaceId" value="">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-info" onclick="saveBackendConfig()">Save Backend Config</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resource Import Modal -->
+<div class="modal fade" id="resourceImportModal" tabindex="-1" aria-labelledby="resourceImportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="resourceImportModalLabel">Import AWS Resource</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Resource Type:</label>
+                    <select class="form-select" id="importResourceType">
+                        <option value="aws_instance">EC2 Instance</option>
+                        <option value="aws_s3_bucket">S3 Bucket</option>
+                        <option value="aws_vpc">VPC</option>
+                        <option value="aws_security_group">Security Group</option>
+                        <option value="aws_subnet">Subnet</option>
+                        <option value="aws_rds_instance">RDS Instance</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Resource ID:</label>
+                    <input type="text" class="form-control" id="importResourceId" placeholder="i-1234567890abcdef0">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Terraform Name:</label>
+                    <input type="text" class="form-control" id="importTerraformName" placeholder="my_instance">
+                </div>
+                <input type="hidden" id="importWorkspaceId" value="">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="performResourceImport()">Import Resource</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Plan Comparison Modal -->
+<div class="modal fade" id="planComparisonModal" tabindex="-1" aria-labelledby="planComparisonModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="planComparisonModalLabel">Compare Plans Between Environments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Environment 1:</label>
+                        <select class="form-select" id="compareEnv1">
+                            <option value="dev">Development</option>
+                            <option value="staging">Staging</option>
+                            <option value="prod">Production</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Environment 2:</label>
+                        <select class="form-select" id="compareEnv2">
+                            <option value="dev">Development</option>
+                            <option value="staging" selected>Staging</option>
+                            <option value="prod">Production</option>
+                        </select>
+                    </div>
+                </div>
+                <input type="hidden" id="compareWorkspaceId" value="">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-info" onclick="performPlanComparison()">Compare Plans</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Security Monitor Modal -->
+<div class="modal fade" id="securityMonitorModal" tabindex="-1" aria-labelledby="securityMonitorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="securityMonitorModalLabel">Real-time Security Monitor</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h3 id="securityScore" class="text-success">--</h3>
+                                <p>Security Score</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h3 id="issuesCount" class="text-warning">--</h3>
+                                <p>Issues Detected</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><strong>Status:</strong> <span id="securityStatus" class="badge bg-secondary">Checking...</span></span>
+                        <button class="btn btn-primary btn-sm" onclick="refreshSecurityStatus()">Refresh</button>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">Last Scan: <span id="lastScan">Never</span></small>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-warning me-2" onclick="runFullSecurityScan()">Run Full Scan</button>
+                    <button class="btn btn-success" onclick="autoRemediateIssues()">Auto-Remediate</button>
+                </div>
+                <input type="hidden" id="securityMonitorWorkspaceId" value="">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Generator Modal -->
+<div class="modal fade" id="aiGeneratorModal" tabindex="-1" aria-labelledby="aiGeneratorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="aiGeneratorModalLabel">AI Terraform Generator</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Describe what you want to create:</label>
+                    <textarea class="form-control" id="aiRequest" rows="4" placeholder="Example: Create a VPC with 3 subnets, an internet gateway, and a security group that allows HTTP and HTTPS traffic"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">AI Model:</label>
+                    <select class="form-select" id="aiModel">
+                        <option value="codellama:7b-instruct">CodeLlama 7B (Recommended)</option>
+                        <option value="qwen2.5-coder:7b">Qwen2.5-Coder 7B</option>
+                        <option value="llama3.1:8b">Llama3.1 8B</option>
+                    </select>
+                </div>
+                <div class="alert alert-info">
+                    <strong>Examples:</strong><br>
+                    • "Create an EC2 instance with a security group"<br>
+                    • "Set up an RDS MySQL database with backup enabled"<br>
+                    • "Build a load balancer with auto scaling group"<br>
+                    • "Create S3 bucket with CloudFront distribution"
+                </div>
+                <input type="hidden" id="aiGeneratorWorkspaceId" value="">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="generateTerraformCode()">Generate Code</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Plan History Modal -->
+<div class="modal fade" id="planHistoryModal" tabindex="-1" aria-labelledby="planHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title" id="planHistoryModalLabel">Plan Archive History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Environment:</label>
+                    <select class="form-select" id="archiveEnv">
+                        <option value="dev">Development</option>
+                        <option value="staging">Staging</option>
+                        <option value="prod">Production</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description (optional):</label>
+                    <input type="text" class="form-control" id="archiveDescription" placeholder="Plan archive description">
+                </div>
+                <div class="mb-3">
+                    <button class="btn btn-primary" onclick="archivePlan()">Archive Current Plan</button>
+                </div>
+                <hr>
+                <h6>Archived Plans:</h6>
+                <div id="planHistoryList" style="max-height: 300px; overflow-y: auto;">
+                    <div class="text-center text-muted">Loading history...</div>
+                </div>
+                <input type="hidden" id="historyWorkspaceId" value="">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Environment Management Modal -->
+<div class="modal fade" id="environmentModal" tabindex="-1" aria-labelledby="environmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="environmentModalLabel">Environment Management</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Environments</h6>
+                        <div class="list-group" id="environmentList">
+                            <button class="list-group-item list-group-item-action active" data-env="dev">Development</button>
+                            <button class="list-group-item list-group-item-action" data-env="staging">Staging</button>
+                            <button class="list-group-item list-group-item-action" data-env="prod">Production</button>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <h6 id="currentEnvTitle">Development Variables</h6>
+                        <textarea class="form-control" id="envVariables" rows="15" placeholder="# Environment-specific variables\nenvironment = \"dev\"\ninstance_type = \"t3.micro\"\ninstance_count = \"1\""></textarea>
+                    </div>
+                </div>
+                <input type="hidden" id="envWorkspaceId" value="">
+                <input type="hidden" id="currentEnvironment" value="dev">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveEnvironmentVariables()">Save Variables</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Workspace Creation Modal -->
 <div class="modal fade" id="createWorkspaceModal" tabindex="-1" aria-labelledby="createWorkspaceModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -621,16 +987,144 @@
                                         Actions
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end" style="max-height: none; overflow: visible;">
-                                        <li><a class="dropdown-item" href="#" onclick="viewWorkspace('${workspace.workspace_id}')"><i class="fas fa-eye me-2"></i>View</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="initWorkspace('${workspace.workspace_id}')"><i class="fas fa-play me-2"></i>Init</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="planWorkspace('${workspace.workspace_id}')"><i class="fas fa-clipboard-list me-2"></i>Plan</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="viewWorkspace('${workspace.workspace_id}')"><i class="fas fa-eye me-2"></i>View Details</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="editWorkspaceFiles('${workspace.workspace_id}')"><i class="fas fa-edit me-2"></i>Edit Files</a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="#" onclick="analyzeWorkspace('${workspace.workspace_id}')"><i class="fas fa-robot me-2"></i>AI Analysis</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="analyzeCosts('${workspace.workspace_id}')"><i class="fas fa-dollar-sign me-2"></i>Cost Analysis</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="analyzeWorkspaceSecurity('${workspace.workspace_id}')"><i class="fas fa-shield-alt me-2"></i>Security Scan</a></li>
+                                        
+                                        <li class="dropdown-submenu">
+                                            <a class="dropdown-item dropdown-toggle" href="#"><i class="fas fa-cogs me-2"></i>Terraform</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="initWorkspace('${workspace.workspace_id}')"><i class="fas fa-play me-2"></i>Init</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="planWorkspace('${workspace.workspace_id}')"><i class="fas fa-clipboard-list me-2"></i>Plan</a></li>
+                                                <li><a class="dropdown-item text-success" href="#" onclick="applyWorkspace('${workspace.workspace_id}')"><i class="fas fa-rocket me-2"></i>Apply/Deploy</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item" href="#" onclick="viewState('${workspace.workspace_id}')"><i class="fas fa-database me-2"></i>View State</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="detectDrift('${workspace.workspace_id}')"><i class="fas fa-search me-2"></i>Drift Detection</a></li>
+                                                <li><a class="dropdown-item text-info" href="#" onclick="rollbackWorkspace('${workspace.workspace_id}')"><i class="fas fa-undo me-2"></i>Rollback</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-warning" href="#" onclick="destroyWorkspace('${workspace.workspace_id}')"><i class="fas fa-bomb me-2"></i>Destroy</a></li>
+                                            </ul>
+                                        </li>
+                                        
+                                        <li class="dropdown-submenu">
+                                            <a class="dropdown-item dropdown-toggle" href="#"><i class="fas fa-check me-2"></i>Code Quality</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="validateWorkspace('${workspace.workspace_id}')"><i class="fas fa-check-circle me-2"></i>Validate</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="formatWorkspace('${workspace.workspace_id}')"><i class="fas fa-code me-2"></i>Format/Lint</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="editTfvars('${workspace.workspace_id}')"><i class="fas fa-cog me-2"></i>Edit Variables</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="browseModules('${workspace.workspace_id}')"><i class="fas fa-cube me-2"></i>Browse Modules</a></li>
+                                            </ul>
+                                        </li>
+                                        
+                                        <li class="dropdown-submenu">
+                                            <a class="dropdown-item dropdown-toggle" href="#"><i class="fas fa-shield-alt me-2"></i>Security & Compliance</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="policyCheck('${workspace.workspace_id}')"><i class="fas fa-gavel me-2"></i>Policy Check</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="complianceScan('${workspace.workspace_id}')"><i class="fas fa-clipboard-check me-2"></i>CIS Compliance</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="secretsScan('${workspace.workspace_id}')"><i class="fas fa-key me-2"></i>Secrets Scan</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="accessControl('${workspace.workspace_id}')"><i class="fas fa-users-cog me-2"></i>Access Control</a></li>
+                                            </ul>
+                                        </li>
+                                        
+                                        <li class="dropdown-submenu">
+                                            <a class="dropdown-item dropdown-toggle" href="#"><i class="fas fa-chart-line me-2"></i>Analysis</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="analyzeWorkspace('${workspace.workspace_id}')"><i class="fas fa-robot me-2"></i>AI Analysis</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="analyzeCosts('${workspace.workspace_id}')"><i class="fas fa-dollar-sign me-2"></i>Cost Analysis</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="analyzeWorkspaceSecurity('${workspace.workspace_id}')"><i class="fas fa-shield-alt me-2"></i>Security Scan</a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item" href="#" onclick="visualizeResources('${workspace.workspace_id}')"><i class="fas fa-project-diagram me-2"></i>Resource Visualization</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="streamLogs('${workspace.workspace_id}')"><i class="fas fa-stream me-2"></i>Real-time Logs</a></li>
+                                            </ul>
+                                        </li>
+                                        
+                                        <li class="dropdown-submenu">
+                                            <a class="dropdown-item dropdown-toggle" href="#"><i class="fas fa-code-branch me-2"></i>Version Control</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="showHistory('${workspace.workspace_id}')"><i class="fas fa-history me-2"></i>View History</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="createSnapshot('${workspace.workspace_id}')"><i class="fas fa-camera me-2"></i>Create Snapshot</a></li>
+                                            </ul>
+                                        </li>
+                                        
+                                        <li class="dropdown-submenu">
+                                            <a class="dropdown-item dropdown-toggle" href="#"><i class="fas fa-vial me-2"></i>Testing</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="runTerratest('${workspace.workspace_id}')"><i class="fas fa-flask me-2"></i>Terratest</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="runOpaCompliance('${workspace.workspace_id}')"><i class="fas fa-balance-scale me-2"></i>OPA Compliance</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="validatePlanRules('${workspace.workspace_id}')"><i class="fas fa-check-double me-2"></i>Plan Validation</a></li>
+                                            </ul>
+                                        </li>
+                                        
+                                        <li class="dropdown-submenu">
+                                            <a class="dropdown-item dropdown-toggle" href="#"><i class="fab fa-aws me-2"></i>AWS Provider</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="configureProvider('${workspace.workspace_id}')"><i class="fas fa-cog me-2"></i>Configure Provider</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="validateCredentials('${workspace.workspace_id}')"><i class="fas fa-key me-2"></i>Validate Credentials</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="switchProfile('${workspace.workspace_id}')"><i class="fas fa-user-cog me-2"></i>Switch Profile</a></li>
+                                            </ul>
+                                        </li>
+                                        
+                                        <li class="dropdown-submenu">
+                                            <a class="dropdown-item dropdown-toggle" href="#"><i class="fas fa-database me-2"></i>State Management</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="configureBackend('${workspace.workspace_id}')"><i class="fas fa-cloud me-2"></i>S3 Backend Setup</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="initBackend('${workspace.workspace_id}')"><i class="fas fa-sync me-2"></i>Initialize Backend</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="shareState('${workspace.workspace_id}')"><i class="fas fa-share me-2"></i>Share State</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="createStateResources()"><i class="fas fa-plus me-2"></i>Create AWS Resources</a></li>
+                                            </ul>
+                                        </li>
+                                        
+                                        <li class="dropdown-submenu">
+                                            <a class="dropdown-item dropdown-toggle" href="#"><i class="fas fa-download me-2"></i>Resource Management</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="discoverResources('${workspace.workspace_id}')"><i class="fas fa-search me-2"></i>Discover Resources</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="importResource('${workspace.workspace_id}')"><i class="fas fa-file-import me-2"></i>Import Resource</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="exportState('${workspace.workspace_id}')"><i class="fas fa-file-export me-2"></i>Export State</a></li>
+                                            </ul>
+                                        </li>
+                                        
+                                        <li class="dropdown-submenu">
+                                            <a class="dropdown-item dropdown-toggle" href="#"><i class="fas fa-layer-group me-2"></i>Environment Management</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="manageEnvironments('${workspace.workspace_id}')"><i class="fas fa-cogs me-2"></i>Manage .tfvars</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="promoteEnvironment('${workspace.workspace_id}')"><i class="fas fa-arrow-up me-2"></i>Promote Environment</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="inheritVariables('${workspace.workspace_id}')"><i class="fas fa-copy me-2"></i>Inherit Variables</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="planWithEnvironment('${workspace.workspace_id}')"><i class="fas fa-play me-2"></i>Plan with Environment</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="comparePlans('${workspace.workspace_id}')"><i class="fas fa-balance-scale me-2"></i>Compare Plans</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="showPlanHistory('${workspace.workspace_id}')"><i class="fas fa-history me-2"></i>Plan History</a></li>
+                                            </ul>
+                                        </li>
+                                        
+                                        <li class="dropdown-submenu">
+                                            <a class="dropdown-item dropdown-toggle" href="#"><i class="fas fa-book me-2"></i>Documentation</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="generateReadme('${workspace.workspace_id}')"><i class="fas fa-file-alt me-2"></i>Generate README</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="generateDocs('${workspace.workspace_id}')"><i class="fas fa-file-invoice-dollar me-2"></i>Resource Documentation</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="generateDiagram('${workspace.workspace_id}')"><i class="fas fa-project-diagram me-2"></i>Architecture Diagram</a></li>
+                                            </ul>
+                                        </li>
+                                        
+                                        <li class="dropdown-submenu">
+                                            <a class="dropdown-item dropdown-toggle" href="#"><i class="fas fa-robot me-2"></i>AI Assistant</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="showAIGenerator('${workspace.workspace_id}')"><i class="fas fa-magic me-2"></i>Generate from Text</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="getAIRecommendations('${workspace.workspace_id}')"><i class="fas fa-lightbulb me-2"></i>Get Recommendations</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="fixWithAI('${workspace.workspace_id}')"><i class="fas fa-wrench me-2"></i>Auto-fix Errors</a></li>
+                                            </ul>
+                                        </li>
+                                        
+                                        <li class="dropdown-submenu">
+                                            <a class="dropdown-item dropdown-toggle" href="#"><i class="fas fa-shield-virus me-2"></i>Real-time Security</a>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="#" onclick="realtimeSecurityScan('${workspace.workspace_id}')"><i class="fas fa-search me-2"></i>Security Scan</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="showSecurityMonitor('${workspace.workspace_id}')"><i class="fas fa-tachometer-alt me-2"></i>Security Monitor</a></li>
+                                                <li><a class="dropdown-item" href="#" onclick="autoRemediate('${workspace.workspace_id}')"><i class="fas fa-magic me-2"></i>Auto-Remediate</a></li>
+                                            </ul>
+                                        </li>
+                                        
+                                        <li><a class="dropdown-item" href="#" onclick="showTemplates('${workspace.workspace_id}')"><i class="fas fa-file-code me-2"></i>Apply Template</a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-warning" href="#" onclick="destroyWorkspace('${workspace.workspace_id}')"><i class="fas fa-bomb me-2"></i>Destroy</a></li>
-                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteWorkspace('${workspace.workspace_id}')"><i class="fas fa-trash me-2"></i>Delete</a></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteWorkspace('${workspace.workspace_id}')"><i class="fas fa-trash me-2"></i>Delete Workspace</a></li>
                                     </ul>
                                 </div>
                             </td>
@@ -1248,6 +1742,402 @@ Files: ${workspace.files.join(', ') || 'None'}`;
         });
     }
 
+    function createSnapshot(workspaceId) {
+        const message = prompt('Enter snapshot description:', 'Snapshot created');
+        if (!message) return;
+        
+        fetch(`/terraform/workspaces/${workspaceId}/snapshot`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: message })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Snapshot ${data.snapshot_id} created successfully!`);
+            } else {
+                alert('Error creating snapshot: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error creating snapshot: ' + error.message);
+        });
+    }
+
+    function showHistory(workspaceId) {
+        const modal = showCommandOutput(`Version History - ${workspaceId}`, 'version history');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/history`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Version History\n${'='.repeat(30)}\n\n`;
+                if (data.history.length === 0) {
+                    output += 'No snapshots found.';
+                } else {
+                    data.history.forEach(snapshot => {
+                        output += `📸 ${snapshot.id} - ${snapshot.message}\n`;
+                        output += `   Author: ${snapshot.author}\n`;
+                        output += `   Date: ${new Date(snapshot.timestamp).toLocaleString()}\n`;
+                        output += `   Files: ${snapshot.files.join(', ')}\n\n`;
+                    });
+                }
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `Error: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+
+    function showTemplates(workspaceId) {
+        document.getElementById('selectedWorkspaceId').value = workspaceId;
+        const modal = new bootstrap.Modal(document.getElementById('templateSelectionModal'));
+        modal.show();
+        
+        fetch('/terraform/templates')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('templateSelect');
+                select.innerHTML = '<option value="">Select a template...</option>';
+                
+                data.templates.forEach(template => {
+                    const option = document.createElement('option');
+                    option.value = template.id;
+                    option.textContent = template.name;
+                    option.dataset.description = template.description;
+                    select.appendChild(option);
+                });
+                
+                // Add change listener to show description
+                select.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    const descDiv = document.getElementById('templateDescription');
+                    
+                    if (selectedOption.dataset.description) {
+                        descDiv.textContent = selectedOption.dataset.description;
+                        descDiv.style.display = 'block';
+                    } else {
+                        descDiv.style.display = 'none';
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            document.getElementById('templateSelect').innerHTML = '<option value="">Error loading templates</option>';
+        });
+    }
+    
+    function applySelectedTemplate() {
+        const workspaceId = document.getElementById('selectedWorkspaceId').value;
+        const templateId = document.getElementById('templateSelect').value;
+        
+        if (!templateId) {
+            alert('Please select a template');
+            return;
+        }
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('templateSelectionModal'));
+        modal.hide();
+        
+        applyTemplate(workspaceId, templateId);
+    }
+
+    function applyTemplate(workspaceId, templateId) {
+        if (!confirm(`Add template "${templateId}" files to workspace? Existing files will not be overwritten.`)) {
+            return;
+        }
+        
+        fetch(`/terraform/workspaces/${workspaceId}/apply-template`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ template_id: templateId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Template applied successfully!');
+                loadWorkspaces();
+            } else {
+                alert('Error applying template: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error applying template: ' + error.message);
+        });
+    }
+
+    function editWorkspaceFiles(workspaceId) {
+        // Open file browser for workspace editing
+        window.open(`/file-browser?session=${workspaceId}`, '_blank');
+    }
+
+    function applyWorkspace(workspaceId) {
+        if (confirm(`⚠️ DEPLOY RESOURCES\n\nThis will create real AWS resources that may incur costs.\n\nAre you sure you want to apply changes to workspace ${workspaceId}?`)) {
+            const modal = showCommandOutput(`Apply - ${workspaceId}`, 'terraform apply');
+            
+            fetch(`/terraform/workspaces/${workspaceId}/apply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const output = data.apply_output || (data.success ? 'Apply completed successfully' : data.error);
+                document.getElementById('commandOutput').textContent = output;
+                if (data.success) loadWorkspaces();
+            })
+            .catch(error => {
+                document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+            });
+        }
+    }
+
+    function viewState(workspaceId) {
+        const modal = showCommandOutput(`Terraform State - ${workspaceId}`, 'terraform state');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/state`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Terraform State\n${'='.repeat(30)}\n\n`;
+                if (data.resources && data.resources.length > 0) {
+                    output += `Resources (${data.resources.length}):\n${'-'.repeat(20)}\n`;
+                    data.resources.forEach(resource => {
+                        output += `• ${resource.type}.${resource.name}\n`;
+                        output += `  Address: ${resource.address}\n`;
+                        output += `  Provider: ${resource.provider}\n\n`;
+                    });
+                } else {
+                    output += 'No resources in state file.';
+                }
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `Error: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+
+    function detectDrift(workspaceId) {
+        const modal = showCommandOutput(`Drift Detection - ${workspaceId}`, 'drift detection');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/drift`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Drift Detection Results\n${'='.repeat(30)}\n\n`;
+                if (data.drift_detected) {
+                    output += `⚠️ DRIFT DETECTED\n\n`;
+                    output += `Changes outside of Terraform:\n${'-'.repeat(25)}\n`;
+                    output += data.drift_details || 'See plan output for details';
+                } else {
+                    output += `✅ NO DRIFT DETECTED\n\nInfrastructure matches Terraform configuration.`;
+                }
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `Error: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+
+    function rollbackWorkspace(workspaceId) {
+        // First get available snapshots
+        fetch(`/terraform/workspaces/${workspaceId}/history`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.history.length > 0) {
+                let snapshotOptions = data.history.map(s => 
+                    `${s.id}: ${s.message} (${new Date(s.timestamp).toLocaleString()})`
+                ).join('\n');
+                
+                const snapshotId = prompt(`Available Snapshots:\n\n${snapshotOptions}\n\nEnter snapshot ID to rollback to:`);
+                if (snapshotId) {
+                    if (confirm(`Rollback to snapshot ${snapshotId}?\n\nThis will restore files and may require terraform apply.`)) {
+                        performRollback(workspaceId, snapshotId);
+                    }
+                }
+            } else {
+                alert('No snapshots available for rollback.');
+            }
+        })
+        .catch(error => {
+            alert('Error loading snapshots: ' + error.message);
+        });
+    }
+
+    function performRollback(workspaceId, snapshotId) {
+        const modal = showCommandOutput(`Rollback - ${workspaceId}`, 'rollback to snapshot');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/restore/${snapshotId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('commandOutput').textContent = `✅ Rollback completed successfully!\n\nWorkspace restored to snapshot ${snapshotId}.\n\nRecommendation: Run 'terraform plan' to see changes.`;
+                loadWorkspaces();
+            } else {
+                document.getElementById('commandOutput').textContent = `Error: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function validateWorkspace(workspaceId) {
+        const modal = showCommandOutput(`Validate - ${workspaceId}`, 'terraform validate');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/validate`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('commandOutput').textContent = '✅ Terraform configuration is valid!';
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Validation failed:\n${data.errors}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function formatWorkspace(workspaceId) {
+        const modal = showCommandOutput(`Format - ${workspaceId}`, 'terraform fmt');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/format`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const files = data.formatted_files.filter(f => f.trim());
+                if (files.length > 0) {
+                    document.getElementById('commandOutput').textContent = `✅ Formatted files:\n${files.join('\n')}`;
+                } else {
+                    document.getElementById('commandOutput').textContent = '✅ All files already properly formatted';
+                }
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Format failed:\n${data.errors}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function editTfvars(workspaceId) {
+        fetch(`/terraform/workspaces/${workspaceId}/tfvars`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const content = prompt('Edit terraform.tfvars:', data.content);
+                if (content !== null) {
+                    fetch(`/terraform/workspaces/${workspaceId}/tfvars`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({content: content})
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('✅ Variables saved successfully');
+                        } else {
+                            alert('❌ Failed to save: ' + data.error);
+                        }
+                    });
+                }
+            } else {
+                alert('Failed to load variables: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Failed to load variables: ' + error.message);
+        });
+    }
+    
+    function browseModules(workspaceId) {
+        document.getElementById('selectedWorkspaceId').value = workspaceId;
+        const modal = new bootstrap.Modal(document.getElementById('moduleSelectionModal'));
+        modal.show();
+        
+        fetch('/terraform/modules/search')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('moduleSelect');
+                select.innerHTML = '<option value="">Select a module...</option>';
+                
+                data.modules.forEach(module => {
+                    const option = document.createElement('option');
+                    option.value = module.name;
+                    option.textContent = module.name;
+                    option.dataset.description = module.description;
+                    select.appendChild(option);
+                });
+                
+                select.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    const descDiv = document.getElementById('moduleDescription');
+                    
+                    if (selectedOption.dataset.description) {
+                        descDiv.textContent = selectedOption.dataset.description;
+                        descDiv.style.display = 'block';
+                    } else {
+                        descDiv.style.display = 'none';
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            document.getElementById('moduleSelect').innerHTML = '<option value="">Error loading modules</option>';
+        });
+    }
+    
+    function importSelectedModule() {
+        const workspaceId = document.getElementById('selectedWorkspaceId').value;
+        const moduleName = document.getElementById('moduleSelect').value;
+        
+        if (!moduleName) {
+            alert('Please select a module');
+            return;
+        }
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('moduleSelectionModal'));
+        modal.hide();
+        
+        fetch(`/terraform/workspaces/${workspaceId}/import-module`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({module: moduleName})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Module imported successfully');
+            } else {
+                alert('❌ Import failed: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Import failed: ' + error.message);
+        });
+    }
+
     function deleteWorkspace(workspaceId) {
         if (confirm(`Are you sure you want to delete workspace ${workspaceId}?\n\nThis will permanently remove the workspace and all its files!`)) {
             fetch(`/terraform/workspaces/${workspaceId}`, {
@@ -1290,7 +2180,1674 @@ Files: ${workspace.files.join(', ') || 'None'}`;
             position: absolute !important;
             z-index: 1050 !important;
         }
+        .dropdown-submenu {
+            position: relative;
+        }
+        .dropdown-submenu .dropdown-menu {
+            top: 0;
+            left: 100%;
+            margin-top: -1px;
+        }
+        .dropdown-submenu:hover .dropdown-menu {
+            display: block;
+        }
+        .dropdown-toggle::after {
+            border-left: 0.3em solid;
+            border-right: 0;
+            border-top: 0.3em solid transparent;
+            border-bottom: 0.3em solid transparent;
+        }
     `;
     document.head.appendChild(style);
+    
+    function policyCheck(workspaceId) {
+        const modal = showCommandOutput(`Policy Check - ${workspaceId}`, 'policy enforcement');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/policy-check`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Policy Enforcement Results\n${'='.repeat(40)}\n\n`;
+                output += `Total Violations: ${data.total_violations}\n\n`;
+                
+                if (data.violations.length > 0) {
+                    data.violations.forEach(violation => {
+                        const icon = violation.severity === 'HIGH' ? '🚨' : violation.severity === 'MEDIUM' ? '⚠️' : 'ℹ️';
+                        output += `${icon} ${violation.file}: ${violation.rule} (${violation.severity})\n`;
+                    });
+                } else {
+                    output += '✅ No policy violations found';
+                }
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `Error: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function complianceScan(workspaceId) {
+        const modal = showCommandOutput(`CIS Compliance - ${workspaceId}`, 'compliance scanning');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/compliance-scan`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `CIS Benchmark Compliance\n${'='.repeat(40)}\n\n`;
+                output += `Compliance Score: ${data.compliance_score}/100\n`;
+                output += `Total Findings: ${data.total_findings}\n\n`;
+                
+                if (data.findings.length > 0) {
+                    output += `Findings:\n${'-'.repeat(20)}\n`;
+                    data.findings.forEach(finding => {
+                        output += `❌ ${finding.benchmark}: ${finding.description}\n`;
+                        output += `   File: ${finding.file}\n\n`;
+                    });
+                } else {
+                    output += '✅ All CIS benchmarks passed';
+                }
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `Error: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function secretsScan(workspaceId) {
+        const modal = showCommandOutput(`Secrets Scan - ${workspaceId}`, 'secret management');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/secrets-scan`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Secret Management Scan\n${'='.repeat(40)}\n\n`;
+                output += `Potential Secrets Found: ${data.total_secrets}\n\n`;
+                
+                if (data.secrets_found.length > 0) {
+                    output += `Findings:\n${'-'.repeat(20)}\n`;
+                    data.secrets_found.forEach(secret => {
+                        output += `🔑 ${secret.file}:${secret.line} - ${secret.type}\n`;
+                        output += `   ${secret.content}\n\n`;
+                    });
+                }
+                
+                output += `Recommendations:\n${'-'.repeat(20)}\n`;
+                data.recommendations.forEach(rec => {
+                    output += `• ${rec}\n`;
+                });
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `Error: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function accessControl(workspaceId) {
+        fetch(`/terraform/workspaces/${workspaceId}/access-control`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const config = JSON.stringify(data.access_config, null, 2);
+                const newConfig = prompt('Edit Access Control Configuration:', config);
+                
+                if (newConfig !== null) {
+                    try {
+                        const parsedConfig = JSON.parse(newConfig);
+                        
+                        fetch(`/terraform/workspaces/${workspaceId}/access-control`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({access_config: parsedConfig})
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert('✅ Access control updated successfully');
+                            } else {
+                                alert('❌ Failed to update: ' + data.error);
+                            }
+                        });
+                    } catch (e) {
+                        alert('❌ Invalid JSON format');
+                    }
+                }
+            } else {
+                alert('Failed to load access control: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Failed to load access control: ' + error.message);
+        });
+    }
+    
+    function visualizeResources(workspaceId) {
+        const modal = showCommandOutput(`Resource Visualization - ${workspaceId}`, 'dependency graph');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/visualize`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Resource Dependency Graph\n${'='.repeat(40)}\n\n`;
+                
+                if (data.graph.nodes.length > 0) {
+                    output += `Resources (${data.graph.nodes.length}):\n${'-'.repeat(20)}\n`;
+                    data.graph.nodes.forEach(node => {
+                        output += `📦 ${node.id} (${node.type})\n`;
+                    });
+                    
+                    output += `\nDependencies (${data.graph.edges.length}):\n${'-'.repeat(20)}\n`;
+                    data.graph.edges.forEach(edge => {
+                        output += `🔗 ${edge.from} → ${edge.to}\n`;
+                    });
+                } else {
+                    output += 'No resources found in workspace';
+                }
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `Error: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function streamLogs(workspaceId) {
+        const modal = showCommandOutput(`Real-time Logs - ${workspaceId}`, 'log streaming');
+        
+        const eventSource = new EventSource(`/terraform/workspaces/${workspaceId}/logs`);
+        const outputEl = document.getElementById('commandOutput');
+        
+        outputEl.textContent = 'Connecting to log stream...\n';
+        
+        eventSource.onmessage = function(event) {
+            outputEl.textContent += event.data + '\n';
+            outputEl.scrollTop = outputEl.scrollHeight;
+        };
+        
+        eventSource.onerror = function() {
+            outputEl.textContent += '\n[Log stream disconnected]\n';
+            eventSource.close();
+        };
+        
+        // Close stream when modal is closed
+        document.getElementById('commandOutputModal').addEventListener('hidden.bs.modal', function() {
+            eventSource.close();
+        }, { once: true });
+    }
+    
+    function runTerratest(workspaceId) {
+        const modal = showCommandOutput(`Terratest - ${workspaceId}`, 'infrastructure testing');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/terratest`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Terratest Infrastructure Testing\n${'='.repeat(50)}\n\n`;
+                output += `✅ Test file created: ${data.test_file_created}\n\n`;
+                output += `Test Results:\n${'-'.repeat(20)}\n`;
+                output += data.test_output;
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Terratest failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function runOpaCompliance(workspaceId) {
+        const modal = showCommandOutput(`OPA Compliance - ${workspaceId}`, 'policy compliance testing');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/opa-test`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `OPA Policy Compliance Testing\n${'='.repeat(50)}\n\n`;
+                output += `📋 Policy file created: ${data.policy_file_created}\n`;
+                output += `📊 Compliance Score: ${data.compliance_score}/100\n`;
+                output += `⚠️ Total Violations: ${data.violations.length}\n\n`;
+                
+                if (data.violations.length > 0) {
+                    output += `Policy Violations:\n${'-'.repeat(30)}\n`;
+                    data.violations.forEach(violation => {
+                        const icon = violation.severity === 'CRITICAL' ? '🚨' : violation.severity === 'HIGH' ? '⚠️' : 'ℹ️';
+                        output += `${icon} ${violation.file}: ${violation.rule} (${violation.severity})\n`;
+                    });
+                } else {
+                    output += '✅ All policy compliance checks passed!';
+                }
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ OPA compliance test failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function validatePlanRules(workspaceId) {
+        const modal = showCommandOutput(`Plan Validation - ${workspaceId}`, 'automated plan validation');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/validate-plan`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Automated Plan Validation\n${'='.repeat(50)}\n\n`;
+                output += `📋 Rules Applied: ${data.rules_applied}\n`;
+                output += `✅ Validation Status: ${data.validation_passed ? 'PASSED' : 'FAILED'}\n\n`;
+                
+                if (data.violations.length > 0) {
+                    output += `❌ Violations (${data.violations.length}):\n${'-'.repeat(30)}\n`;
+                    data.violations.forEach(violation => {
+                        output += `• ${violation}\n`;
+                    });
+                    output += '\n';
+                }
+                
+                if (data.warnings.length > 0) {
+                    output += `⚠️ Warnings (${data.warnings.length}):\n${'-'.repeat(30)}\n`;
+                    data.warnings.forEach(warning => {
+                        output += `• ${warning}\n`;
+                    });
+                    output += '\n';
+                }
+                
+                if (data.validation_passed && data.warnings.length === 0) {
+                    output += '🎉 All validation rules passed with no warnings!';
+                }
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Plan validation failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function configureProvider(workspaceId) {
+        document.getElementById('providerWorkspaceId').value = workspaceId;
+        const modal = new bootstrap.Modal(document.getElementById('awsProviderModal'));
+        
+        // Load AWS profiles
+        fetch('/terraform/aws/profiles')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const select = document.getElementById('awsProfile');
+                select.innerHTML = '';
+                data.profiles.forEach(profile => {
+                    const option = document.createElement('option');
+                    option.value = profile;
+                    option.textContent = profile;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading profiles:', error);
+        });
+        
+        modal.show();
+    }
+    
+    function saveProviderConfig() {
+        const workspaceId = document.getElementById('providerWorkspaceId').value;
+        const region = document.getElementById('awsRegion').value;
+        const profile = document.getElementById('awsProfile').value;
+        const assumeRole = document.getElementById('assumeRole').value;
+        
+        fetch(`/terraform/workspaces/${workspaceId}/provider-config`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                region: region,
+                profile: profile,
+                assume_role: assumeRole
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Provider configuration saved successfully!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('awsProviderModal'));
+                modal.hide();
+            } else {
+                alert('❌ Failed to save configuration: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error saving configuration: ' + error.message);
+        });
+    }
+    
+    function validateCredentials(workspaceId) {
+        const modal = showCommandOutput(`Validate Credentials - ${workspaceId}`, 'AWS credentials validation');
+        
+        // Get current provider config first
+        fetch(`/terraform/workspaces/${workspaceId}/provider-config`)
+        .then(response => response.json())
+        .then(data => {
+            let profile = 'default';
+            let region = 'us-east-1';
+            
+            if (data.success && data.content) {
+                const profileMatch = data.content.match(/profile\s*=\s*"([^"]+)"/);
+                const regionMatch = data.content.match(/region\s*=\s*"([^"]+)"/);
+                if (profileMatch) profile = profileMatch[1];
+                if (regionMatch) region = regionMatch[1];
+            }
+            
+            return fetch('/terraform/aws/validate-credentials', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ profile: profile, region: region })
+            });
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `AWS Credentials Validation\n${'='.repeat(50)}\n\n`;
+                
+                if (data.valid) {
+                    output += `✅ Credentials Valid\n\n`;
+                    output += `Account ID: ${data.account_id}\n`;
+                    output += `User ARN: ${data.user_arn}\n`;
+                    output += `User ID: ${data.user_id}\n`;
+                } else {
+                    output += `❌ Credentials Invalid\n\n`;
+                    output += `Error: ${data.error}\n`;
+                }
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Validation failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function switchProfile(workspaceId) {
+        // Load available profiles
+        fetch('/terraform/aws/profiles')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const profiles = data.profiles.join('\n');
+                const selectedProfile = prompt(`Available AWS Profiles:\n\n${profiles}\n\nEnter profile name:`, 'default');
+                
+                if (selectedProfile) {
+                    const selectedRegion = prompt('Enter AWS region:', 'us-east-1');
+                    
+                    if (selectedRegion) {
+                        performProfileSwitch(workspaceId, selectedProfile, selectedRegion);
+                    }
+                }
+            } else {
+                alert('Failed to load profiles: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error loading profiles: ' + error.message);
+        });
+    }
+    
+    function performProfileSwitch(workspaceId, profile, region) {
+        const modal = showCommandOutput(`Switch Profile - ${workspaceId}`, 'AWS profile switching');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/switch-profile`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                profile: profile,
+                region: region
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `AWS Profile Switch\n${'='.repeat(50)}\n\n`;
+                output += `✅ Successfully switched to profile: ${data.profile}\n`;
+                output += `Region: ${data.region}\n`;
+                output += `Account ID: ${data.account_id}\n`;
+                output += `User ARN: ${data.user_arn}\n\n`;
+                output += `Provider configuration updated in provider.tf`;
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Profile switch failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function configureBackend(workspaceId) {
+        document.getElementById('backendWorkspaceId').value = workspaceId;
+        document.getElementById('stateKey').value = `${workspaceId}/terraform.tfstate`;
+        const modal = new bootstrap.Modal(document.getElementById('backendConfigModal'));
+        modal.show();
+    }
+    
+    function saveBackendConfig() {
+        const workspaceId = document.getElementById('backendWorkspaceId').value;
+        const bucket = document.getElementById('s3Bucket').value;
+        const key = document.getElementById('stateKey').value;
+        const region = document.getElementById('backendRegion').value;
+        const dynamodbTable = document.getElementById('dynamodbTable').value;
+        
+        if (!bucket) {
+            alert('S3 bucket name is required');
+            return;
+        }
+        
+        fetch(`/terraform/workspaces/${workspaceId}/backend-config`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                bucket: bucket,
+                key: key,
+                region: region,
+                dynamodb_table: dynamodbTable
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ Backend configuration saved successfully!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('backendConfigModal'));
+                modal.hide();
+            } else {
+                alert('❌ Failed to save backend config: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error saving backend config: ' + error.message);
+        });
+    }
+    
+    function initBackend(workspaceId) {
+        if (confirm(`Initialize S3 backend for workspace ${workspaceId}?\n\nThis will migrate local state to remote S3 backend.`)) {
+            const modal = showCommandOutput(`Initialize Backend - ${workspaceId}`, 'terraform init with backend migration');
+            
+            fetch(`/terraform/workspaces/${workspaceId}/init-backend`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('commandOutput').textContent = `✅ Backend initialized successfully!\n\n${data.output}`;
+                } else {
+                    document.getElementById('commandOutput').textContent = `❌ Backend initialization failed: ${data.error}`;
+                }
+            })
+            .catch(error => {
+                document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+            });
+        }
+    }
+    
+    function shareState(workspaceId) {
+        // Get list of available workspaces
+        fetch('/terraform/workspaces')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const workspaces = data.workspaces.filter(w => w.workspace_id !== workspaceId);
+                if (workspaces.length === 0) {
+                    alert('No other workspaces available to share state with.');
+                    return;
+                }
+                
+                const workspaceNames = workspaces.map(w => w.workspace_id).join('\n');
+                const targetWorkspace = prompt(`Available Workspaces:\n\n${workspaceNames}\n\nEnter target workspace name:`);
+                
+                if (targetWorkspace) {
+                    performStateShare(workspaceId, targetWorkspace);
+                }
+            } else {
+                alert('Failed to load workspaces: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error loading workspaces: ' + error.message);
+        });
+    }
+    
+    function performStateShare(sourceWorkspace, targetWorkspace) {
+        const modal = showCommandOutput(`Share State - ${sourceWorkspace}`, 'state configuration sharing');
+        
+        fetch(`/terraform/workspaces/${sourceWorkspace}/share-state`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                target_workspace: targetWorkspace
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `State Configuration Sharing\n${'='.repeat(50)}\n\n`;
+                output += `✅ Successfully shared state configuration\n`;
+                output += `Source: ${sourceWorkspace}\n`;
+                output += `Target: ${targetWorkspace}\n\n`;
+                output += `Backend configuration copied to target workspace.\n`;
+                output += `Run 'terraform init' on target workspace to use shared state.`;
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ State sharing failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function createStateResources() {
+        const bucketName = prompt('Enter S3 bucket name for Terraform state:', 'terraform-state-' + Date.now());
+        if (!bucketName) return;
+        
+        const tableName = prompt('Enter DynamoDB table name for state locking:', 'terraform-locks');
+        if (!tableName) return;
+        
+        const region = prompt('Enter AWS region:', 'us-east-1');
+        if (!region) return;
+        
+        const modal = showCommandOutput('Create State Resources', 'AWS S3 and DynamoDB setup');
+        
+        fetch('/terraform/aws/create-state-resources', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                bucket_name: bucketName,
+                table_name: tableName,
+                region: region
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `AWS State Resources Creation\n${'='.repeat(50)}\n\n`;
+                output += `S3 Bucket: ${data.bucket_created ? '✅ Created' : '❌ Failed'}\n`;
+                output += `DynamoDB Table: ${data.table_created ? '✅ Created' : '❌ Failed'}\n\n`;
+                
+                if (data.s3_output) {
+                    output += `S3 Output:\n${'-'.repeat(20)}\n${data.s3_output}\n\n`;
+                }
+                
+                if (data.dynamodb_output) {
+                    output += `DynamoDB Output:\n${'-'.repeat(20)}\n${data.dynamodb_output}\n\n`;
+                }
+                
+                output += `\nNext Steps:\n`;
+                output += `1. Configure backend with bucket: ${bucketName}\n`;
+                output += `2. Use DynamoDB table: ${tableName}\n`;
+                output += `3. Run 'terraform init' to migrate state`;
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Resource creation failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function discoverResources(workspaceId) {
+        const region = prompt('Enter AWS region for resource discovery:', 'us-east-1');
+        if (!region) return;
+        
+        const modal = showCommandOutput(`Discover Resources - ${workspaceId}`, 'AWS resource discovery');
+        
+        fetch('/terraform/aws/discover-resources', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                region: region,
+                resource_types: ['ec2', 's3', 'vpc']
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `AWS Resource Discovery\n${'='.repeat(50)}\n\n`;
+                output += `Region: ${data.region}\n\n`;
+                
+                const resources = data.resources;
+                
+                if (resources.ec2_instances && resources.ec2_instances.length > 0) {
+                    output += `EC2 Instances (${resources.ec2_instances.length}):\n${'-'.repeat(30)}\n`;
+                    resources.ec2_instances.forEach(instance => {
+                        output += `🖥️ ${instance.id} (${instance.type}) - ${instance.name} [${instance.state}]\n`;
+                    });
+                    output += '\n';
+                }
+                
+                if (resources.s3_buckets && resources.s3_buckets.length > 0) {
+                    output += `S3 Buckets (${resources.s3_buckets.length}):\n${'-'.repeat(30)}\n`;
+                    resources.s3_buckets.forEach(bucket => {
+                        output += `📦 ${bucket.name} (${bucket.created})\n`;
+                    });
+                    output += '\n';
+                }
+                
+                if (resources.vpcs && resources.vpcs.length > 0) {
+                    output += `VPCs (${resources.vpcs.length}):\n${'-'.repeat(30)}\n`;
+                    resources.vpcs.forEach(vpc => {
+                        output += `🌐 ${vpc.id} (${vpc.cidr}) - ${vpc.name} [${vpc.state}]\n`;
+                    });
+                    output += '\n';
+                }
+                
+                if (!resources.ec2_instances?.length && !resources.s3_buckets?.length && !resources.vpcs?.length) {
+                    output += 'No resources found in the specified region.';
+                }
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Resource discovery failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function importResource(workspaceId) {
+        document.getElementById('importWorkspaceId').value = workspaceId;
+        const modal = new bootstrap.Modal(document.getElementById('resourceImportModal'));
+        modal.show();
+    }
+    
+    function performResourceImport() {
+        const workspaceId = document.getElementById('importWorkspaceId').value;
+        const resourceType = document.getElementById('importResourceType').value;
+        const resourceId = document.getElementById('importResourceId').value;
+        const terraformName = document.getElementById('importTerraformName').value;
+        
+        if (!resourceId || !terraformName) {
+            alert('Resource ID and Terraform name are required');
+            return;
+        }
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('resourceImportModal'));
+        modal.hide();
+        
+        const outputModal = showCommandOutput(`Import Resource - ${workspaceId}`, 'terraform import');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/import-resource`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                resource_type: resourceType,
+                resource_id: resourceId,
+                terraform_name: terraformName
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Resource Import\n${'='.repeat(50)}\n\n`;
+                output += `✅ Successfully imported resource\n`;
+                output += `Resource Type: ${resourceType}\n`;
+                output += `Resource ID: ${resourceId}\n`;
+                output += `Terraform Address: ${data.terraform_address}\n`;
+                output += `Configuration Generated: ${data.config_generated ? 'Yes' : 'No'}\n\n`;
+                output += `Import Output:\n${'-'.repeat(20)}\n`;
+                output += data.import_output;
+                output += `\n\nNext Steps:\n`;
+                output += `1. Review generated configuration in imported.tf\n`;
+                output += `2. Run 'terraform plan' to see required attributes\n`;
+                output += `3. Update configuration as needed`;
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Resource import failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function exportState(workspaceId) {
+        if (confirm(`Export current state to Terraform configuration?\n\nThis will create exported.tf with resource definitions.`)) {
+            const modal = showCommandOutput(`Export State - ${workspaceId}`, 'state export');
+            
+            fetch(`/terraform/workspaces/${workspaceId}/export-state`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let output = `State Export\n${'='.repeat(50)}\n\n`;
+                    output += `✅ Successfully exported state to configuration\n`;
+                    output += `File Created: ${data.file_created}\n`;
+                    output += `Resources Exported: ${data.resource_count}\n\n`;
+                    output += `The exported configuration contains resource definitions\n`;
+                    output += `based on the current Terraform state.\n\n`;
+                    output += `Next Steps:\n`;
+                    output += `1. Review exported.tf file\n`;
+                    output += `2. Customize configuration as needed\n`;
+                    output += `3. Use for new workspace or backup`;
+                    
+                    document.getElementById('commandOutput').textContent = output;
+                } else {
+                    document.getElementById('commandOutput').textContent = `❌ State export failed: ${data.error}`;
+                }
+            })
+            .catch(error => {
+                document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+            });
+        }
+    }
+    
+    function manageEnvironments(workspaceId) {
+        document.getElementById('envWorkspaceId').value = workspaceId;
+        const modal = new bootstrap.Modal(document.getElementById('environmentModal'));
+        
+        // Load environment files
+        fetch(`/terraform/workspaces/${workspaceId}/environments`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.environmentData = data.environments;
+                document.getElementById('envVariables').value = data.environments.dev || '';
+                
+                // Add click handlers for environment tabs
+                document.querySelectorAll('#environmentList .list-group-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        document.querySelectorAll('#environmentList .list-group-item').forEach(i => i.classList.remove('active'));
+                        this.classList.add('active');
+                        
+                        const env = this.dataset.env;
+                        document.getElementById('currentEnvironment').value = env;
+                        document.getElementById('currentEnvTitle').textContent = `${this.textContent} Variables`;
+                        document.getElementById('envVariables').value = window.environmentData[env] || '';
+                    });
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading environments:', error);
+        });
+        
+        modal.show();
+    }
+    
+    function saveEnvironmentVariables() {
+        const workspaceId = document.getElementById('envWorkspaceId').value;
+        const environment = document.getElementById('currentEnvironment').value;
+        const content = document.getElementById('envVariables').value;
+        
+        fetch(`/terraform/workspaces/${workspaceId}/environments`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                environment: environment,
+                content: content
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`✅ ${environment}.tfvars saved successfully!`);
+                window.environmentData[environment] = content;
+            } else {
+                alert(`❌ Failed to save: ${data.error}`);
+            }
+        })
+        .catch(error => {
+            alert('Error saving variables: ' + error.message);
+        });
+    }
+    
+    function promoteEnvironment(workspaceId) {
+        const promotions = [
+            'dev → staging',
+            'staging → prod'
+        ];
+        
+        const selection = prompt(`Available Promotions:\n\n${promotions.join('\n')}\n\nEnter promotion (e.g., "dev staging"):`);
+        if (!selection) return;
+        
+        const [sourceEnv, targetEnv] = selection.split(/\s+/);
+        if (!sourceEnv || !targetEnv) {
+            alert('Invalid format. Use: source target (e.g., "dev staging")');
+            return;
+        }
+        
+        const modal = showCommandOutput(`Promote Environment - ${workspaceId}`, 'environment promotion');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/promote`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                source_env: sourceEnv,
+                target_env: targetEnv
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Environment Promotion\n${'='.repeat(50)}\n\n`;
+                output += `✅ Successfully promoted environment\n`;
+                output += `Source: ${data.source_env}\n`;
+                output += `Target: ${data.target_env}\n\n`;
+                output += `Variables copied with environment-specific overrides applied.\n`;
+                output += `Review ${data.target_env}.tfvars file for changes.\n\n`;
+                output += `Next Steps:\n`;
+                output += `1. Review promoted variables\n`;
+                output += `2. Run plan with target environment\n`;
+                output += `3. Apply changes when ready`;
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Promotion failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function inheritVariables(workspaceId) {
+        const baseEnv = prompt('Enter base environment to inherit from:', 'dev');
+        if (!baseEnv) return;
+        
+        const targetEnv = prompt('Enter target environment:', 'staging');
+        if (!targetEnv) return;
+        
+        const overridesStr = prompt('Enter overrides as JSON (optional):', '{}');
+        let overrides = {};
+        
+        try {
+            overrides = JSON.parse(overridesStr);
+        } catch (e) {
+            alert('Invalid JSON format for overrides');
+            return;
+        }
+        
+        const modal = showCommandOutput(`Inherit Variables - ${workspaceId}`, 'variable inheritance');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/variables/inherit`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                base_env: baseEnv,
+                target_env: targetEnv,
+                overrides: overrides
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Variable Inheritance\n${'='.repeat(50)}\n\n`;
+                output += `✅ Successfully inherited variables\n`;
+                output += `Base Environment: ${baseEnv}\n`;
+                output += `Target Environment: ${targetEnv}\n`;
+                output += `Inherited Variables: ${data.inherited_vars}\n`;
+                output += `Overrides Applied: ${data.overrides_applied}\n`;
+                output += `Total Variables: ${data.total_vars}\n\n`;
+                output += `Variables have been copied to ${targetEnv}.tfvars with overrides applied.`;
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Variable inheritance failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function planWithEnvironment(workspaceId) {
+        const environment = prompt('Enter environment to plan with:', 'dev');
+        if (!environment) return;
+        
+        const modal = showCommandOutput(`Plan with Environment - ${workspaceId}`, `terraform plan with ${environment}.tfvars`);
+        
+        fetch(`/terraform/workspaces/${workspaceId}/plan-env`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                environment: environment
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Terraform Plan (${data.environment})\n${'='.repeat(50)}\n\n`;
+                output += data.plan_output;
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Plan failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function comparePlans(workspaceId) {
+        document.getElementById('compareWorkspaceId').value = workspaceId;
+        const modal = new bootstrap.Modal(document.getElementById('planComparisonModal'));
+        modal.show();
+    }
+    
+    function performPlanComparison() {
+        const workspaceId = document.getElementById('compareWorkspaceId').value;
+        const env1 = document.getElementById('compareEnv1').value;
+        const env2 = document.getElementById('compareEnv2').value;
+        
+        if (env1 === env2) {
+            alert('Please select different environments to compare');
+            return;
+        }
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('planComparisonModal'));
+        modal.hide();
+        
+        const outputModal = showCommandOutput(`Plan Comparison - ${workspaceId}`, `comparing ${env1} vs ${env2}`);
+        
+        fetch(`/terraform/workspaces/${workspaceId}/compare-plans`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                env1: env1,
+                env2: env2
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Plan Comparison: ${data.env1} vs ${data.env2}\n${'='.repeat(60)}\n\n`;
+                
+                const comparison = data.comparison;
+                
+                output += `Changes only in ${data.env1} (${comparison.env1_only.length}):\n${'-'.repeat(40)}\n`;
+                if (comparison.env1_only.length > 0) {
+                    comparison.env1_only.forEach(change => {
+                        output += `• ${change.address || 'Unknown'} - ${change.change?.actions?.join(', ') || 'Unknown action'}\n`;
+                    });
+                } else {
+                    output += 'No unique changes\n';
+                }
+                
+                output += `\nChanges only in ${data.env2} (${comparison.env2_only.length}):\n${'-'.repeat(40)}\n`;
+                if (comparison.env2_only.length > 0) {
+                    comparison.env2_only.forEach(change => {
+                        output += `• ${change.address || 'Unknown'} - ${change.change?.actions?.join(', ') || 'Unknown action'}\n`;
+                    });
+                } else {
+                    output += 'No unique changes\n';
+                }
+                
+                output += `\nCommon changes (${comparison.common.length}):\n${'-'.repeat(40)}\n`;
+                if (comparison.common.length > 0) {
+                    comparison.common.forEach(change => {
+                        output += `• ${change.address || 'Unknown'} - ${change.change?.actions?.join(', ') || 'Unknown action'}\n`;
+                    });
+                } else {
+                    output += 'No common changes\n';
+                }
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Plan comparison failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function showPlanHistory(workspaceId) {
+        document.getElementById('historyWorkspaceId').value = workspaceId;
+        const modal = new bootstrap.Modal(document.getElementById('planHistoryModal'));
+        
+        // Load plan history
+        fetch(`/terraform/workspaces/${workspaceId}/plan-history`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const historyList = document.getElementById('planHistoryList');
+                
+                if (data.history.length === 0) {
+                    historyList.innerHTML = '<div class="text-muted">No archived plans found</div>';
+                } else {
+                    let html = '';
+                    data.history.forEach(archive => {
+                        const date = new Date(archive.timestamp.replace('_', 'T').replace(/_(\d{2})(\d{2})(\d{2})$/, 'T$1:$2:$3'));
+                        html += `
+                            <div class="card mb-2">
+                                <div class="card-body p-2">
+                                    <h6 class="card-title mb-1">${archive.env} - ${archive.file}</h6>
+                                    <p class="card-text mb-1">${archive.description || 'No description'}</p>
+                                    <small class="text-muted">${date.toLocaleString()}</small>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    historyList.innerHTML = html;
+                }
+            } else {
+                document.getElementById('planHistoryList').innerHTML = '<div class="text-danger">Error loading history</div>';
+            }
+        })
+        .catch(error => {
+            document.getElementById('planHistoryList').innerHTML = '<div class="text-danger">Error loading history</div>';
+        });
+        
+        modal.show();
+    }
+    
+    function archivePlan() {
+        const workspaceId = document.getElementById('historyWorkspaceId').value;
+        const env = document.getElementById('archiveEnv').value;
+        const description = document.getElementById('archiveDescription').value;
+        
+        fetch(`/terraform/workspaces/${workspaceId}/archive-plan`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                env: env,
+                description: description
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`✅ ${data.message}`);
+                document.getElementById('archiveDescription').value = '';
+                showPlanHistory(workspaceId); // Refresh history
+            } else {
+                alert(`❌ Archive failed: ${data.error}`);
+            }
+        })
+        .catch(error => {
+            alert('Error archiving plan: ' + error.message);
+        });
+    }
+    
+    function generateReadme(workspaceId) {
+        const modal = showCommandOutput(`Generate README - ${workspaceId}`, 'README.md generation');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/generate-readme`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `README.md Generation\n${'='.repeat(50)}\n\n`;
+                output += `✅ Successfully generated README.md\n`;
+                output += `📄 File Created: ${data.file_created}\n`;
+                output += `📦 Resources Documented: ${data.resources_documented}\n`;
+                output += `🔧 Variables Documented: ${data.variables_documented}\n`;
+                output += `📤 Outputs Documented: ${data.outputs_documented}\n\n`;
+                output += `The README.md file has been generated with:\n`;
+                output += `• Resource inventory and descriptions\n`;
+                output += `• Variable definitions\n`;
+                output += `• Output descriptions\n`;
+                output += `• Usage instructions\n\n`;
+                output += `Open the file to review and customize the documentation.`;
+                
+                document.getElementById('commandOutput').textContent = output;
+                
+                // Open README in file browser
+                setTimeout(() => {
+                    window.open(`/file-browser?session=${workspaceId}&file=README.md`, '_blank');
+                }, 1000);
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ README generation failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function generateDocs(workspaceId) {
+        const modal = showCommandOutput(`Generate Documentation - ${workspaceId}`, 'resource documentation with costs');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/generate-docs`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Resource Documentation\n${'='.repeat(50)}\n\n`;
+                output += `✅ Successfully generated infrastructure documentation\n`;
+                output += `📄 File Created: ${data.file_created}\n`;
+                output += `📦 Resources Documented: ${data.resources_documented}\n`;
+                output += `💰 Total Monthly Cost: $${data.total_monthly_cost.toFixed(2)}\n\n`;
+                output += `The documentation includes:\n`;
+                output += `• Detailed resource information\n`;
+                output += `• Cost estimates for each resource\n`;
+                output += `• Resource dependencies\n`;
+                output += `• Monthly cost breakdown\n\n`;
+                output += `Review INFRASTRUCTURE.md for complete details.`;
+                
+                document.getElementById('commandOutput').textContent = output;
+                
+                // Open documentation in file browser
+                setTimeout(() => {
+                    window.open(`/file-browser?session=${workspaceId}&file=INFRASTRUCTURE.md`, '_blank');
+                }, 1000);
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Documentation generation failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function generateDiagram(workspaceId) {
+        const modal = showCommandOutput(`Generate Architecture Diagram - ${workspaceId}`, 'architecture diagram generation');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/generate-diagram`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Architecture Diagram Generation\n${'='.repeat(50)}\n\n`;
+                output += `✅ Successfully generated architecture diagram\n`;
+                output += `📄 File Created: ${data.file_created}\n`;
+                output += `📦 Resources Mapped: ${data.resources_mapped}\n`;
+                output += `🔗 Relationships Found: ${data.relationships_found}\n\n`;
+                output += `The diagram includes:\n`;
+                output += `• Visual representation of all resources\n`;
+                output += `• Resource relationships and dependencies\n`;
+                output += `• Mermaid diagram format\n`;
+                output += `• Icons for different resource types\n\n`;
+                output += `View ARCHITECTURE.md to see the generated diagram.\n`;
+                output += `The diagram can be rendered in GitHub, GitLab, or any Mermaid-compatible viewer.`;
+                
+                document.getElementById('commandOutput').textContent = output;
+                
+                // Open diagram in file browser
+                setTimeout(() => {
+                    window.open(`/file-browser?session=${workspaceId}&file=ARCHITECTURE.md`, '_blank');
+                }, 1000);
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Diagram generation failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function showAIGenerator(workspaceId) {
+        document.getElementById('aiGeneratorWorkspaceId').value = workspaceId;
+        
+        // Load available models
+        fetch('/api/model-status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.ollama && data.ollama.models) {
+                const select = document.getElementById('aiModel');
+                select.innerHTML = '';
+                
+                // Prioritize code models
+                const codeModels = data.ollama.models.filter(m => 
+                    m.includes('codellama') || m.includes('coder') || m.includes('code')
+                );
+                const otherModels = data.ollama.models.filter(m => 
+                    !m.includes('codellama') && !m.includes('coder') && !m.includes('code')
+                );
+                
+                [...codeModels, ...otherModels].forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => console.error('Error loading models:', error));
+        
+        const modal = new bootstrap.Modal(document.getElementById('aiGeneratorModal'));
+        modal.show();
+    }
+    
+    function generateTerraformCode() {
+        const workspaceId = document.getElementById('aiGeneratorWorkspaceId').value;
+        const request = document.getElementById('aiRequest').value.trim();
+        const model = document.getElementById('aiModel').value;
+        
+        if (!request) {
+            alert('Please describe what you want to create');
+            return;
+        }
+        
+        const modal = bootstrap.Modal.getInstance(document.getElementById('aiGeneratorModal'));
+        modal.hide();
+        
+        const outputModal = showCommandOutput(`AI Code Generation - ${workspaceId}`, 'generating Terraform code');
+        
+        // Show progress
+        document.getElementById('progressContainer').style.display = 'block';
+        document.getElementById('commandOutput').style.display = 'none';
+        
+        let progress = 0;
+        const updateProgress = (percent, text) => {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').textContent = text;
+        };
+        
+        updateProgress(10, 'Analyzing request...');
+        setTimeout(() => updateProgress(30, 'Generating Terraform code...'), 500);
+        setTimeout(() => updateProgress(60, 'Optimizing configuration...'), 2000);
+        setTimeout(() => updateProgress(85, 'Finalizing code...'), 4000);
+        
+        fetch(`/terraform/workspaces/${workspaceId}/ai-generate`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                request: request,
+                model: model
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            updateProgress(100, 'Code generation complete!');
+            
+            setTimeout(() => {
+                document.getElementById('progressContainer').style.display = 'none';
+                document.getElementById('commandOutput').style.display = 'block';
+                
+                if (data.success) {
+                    let output = `AI Terraform Code Generation\n${'='.repeat(60)}\n\n`;
+                    output += `✅ Successfully generated Terraform code\n`;
+                    output += `📝 Request: "${data.request}"\n`;
+                    output += `📄 File Created: ${data.file_created}\n\n`;
+                    output += `Generated Code Preview:\n${'-'.repeat(30)}\n`;
+                    output += data.generated_code.substring(0, 500);
+                    if (data.generated_code.length > 500) {
+                        output += '\n\n... (truncated, see full code in ai-generated.tf)';
+                    }
+                    output += `\n\nNext Steps:\n`;
+                    output += `1. Review the generated code\n`;
+                    output += `2. Customize as needed\n`;
+                    output += `3. Run 'terraform plan' to validate\n`;
+                    output += `4. Apply when ready`;
+                    
+                    document.getElementById('commandOutput').textContent = output;
+                    
+                    // Open generated file
+                    setTimeout(() => {
+                        window.open(`/file-browser?session=${workspaceId}&file=ai-generated.tf`, '_blank');
+                    }, 1000);
+                } else {
+                    document.getElementById('commandOutput').textContent = `❌ Code generation failed: ${data.error}`;
+                }
+            }, 500);
+        })
+        .catch(error => {
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('commandOutput').style.display = 'block';
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function getAIRecommendations(workspaceId) {
+        const modal = showCommandOutput(`AI Recommendations - ${workspaceId}`, 'analyzing infrastructure for improvements');
+        
+        // Show progress
+        document.getElementById('progressContainer').style.display = 'block';
+        document.getElementById('commandOutput').style.display = 'none';
+        
+        const updateProgress = (percent, text) => {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').textContent = text;
+        };
+        
+        updateProgress(15, 'Reading Terraform files...');
+        setTimeout(() => updateProgress(40, 'Analyzing resource configurations...'), 800);
+        setTimeout(() => updateProgress(65, 'Checking best practices...'), 1500);
+        setTimeout(() => updateProgress(85, 'Generating recommendations...'), 2500);
+        
+        fetch(`/terraform/workspaces/${workspaceId}/ai-recommend`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            updateProgress(100, 'Analysis complete!');
+            
+            setTimeout(() => {
+                document.getElementById('progressContainer').style.display = 'none';
+                document.getElementById('commandOutput').style.display = 'block';
+                
+                if (data.success) {
+                    let output = `AI Infrastructure Recommendations\n${'='.repeat(60)}\n\n`;
+                    output += `✅ Analysis completed successfully\n`;
+                    output += `📄 File Created: ${data.file_created}\n\n`;
+                    output += `Recommendations:\n${'-'.repeat(30)}\n`;
+                    output += data.recommendations;
+                    
+                    document.getElementById('commandOutput').textContent = output;
+                    
+                    // Open recommendations file
+                    setTimeout(() => {
+                        window.open(`/file-browser?session=${workspaceId}&file=ai-recommendations.md`, '_blank');
+                    }, 1000);
+                } else {
+                    document.getElementById('commandOutput').textContent = `❌ Recommendations failed: ${data.error}`;
+                }
+            }, 500);
+        })
+        .catch(error => {
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('commandOutput').style.display = 'block';
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function fixWithAI(workspaceId) {
+        const modal = showCommandOutput(`AI Error Fixing - ${workspaceId}`, 'analyzing and fixing Terraform errors');
+        
+        // Show progress
+        document.getElementById('progressContainer').style.display = 'block';
+        document.getElementById('commandOutput').style.display = 'none';
+        
+        const updateProgress = (percent, text) => {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').textContent = text;
+        };
+        
+        updateProgress(10, 'Running terraform validate...');
+        setTimeout(() => updateProgress(30, 'Analyzing error patterns...'), 1000);
+        setTimeout(() => updateProgress(60, 'Generating fixes...'), 2000);
+        setTimeout(() => updateProgress(85, 'Preparing solutions...'), 3000);
+        
+        fetch(`/terraform/workspaces/${workspaceId}/ai-fix`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            updateProgress(100, 'Error analysis complete!');
+            
+            setTimeout(() => {
+                document.getElementById('progressContainer').style.display = 'none';
+                document.getElementById('commandOutput').style.display = 'block';
+                
+                if (data.success) {
+                    let output = `AI Error Fixing\n${'='.repeat(60)}\n\n`;
+                    output += `✅ Error analysis completed\n`;
+                    output += `📄 File Created: ${data.file_created}\n`;
+                    output += `🔍 Errors Analyzed: ${data.errors_analyzed} characters\n\n`;
+                    output += `Suggested Fixes:\n${'-'.repeat(30)}\n`;
+                    output += data.fixes.substring(0, 800);
+                    if (data.fixes.length > 800) {
+                        output += '\n\n... (see full fixes in ai-fixes.md)';
+                    }
+                    output += `\n\nNext Steps:\n`;
+                    output += `1. Review the suggested fixes\n`;
+                    output += `2. Apply fixes to your Terraform files\n`;
+                    output += `3. Run 'terraform validate' to verify\n`;
+                    output += `4. Test with 'terraform plan'`;
+                    
+                    document.getElementById('commandOutput').textContent = output;
+                    
+                    // Open fixes file
+                    setTimeout(() => {
+                        window.open(`/file-browser?session=${workspaceId}&file=ai-fixes.md`, '_blank');
+                    }, 1000);
+                } else {
+                    document.getElementById('commandOutput').textContent = `❌ Error fixing failed: ${data.error}`;
+                }
+            }, 500);
+        })
+        .catch(error => {
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('commandOutput').style.display = 'block';
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    let currentSecurityWorkspaceId = null;
+    let securityScanData = null;
+    
+    function realtimeSecurityScan(workspaceId) {
+        const modal = showCommandOutput(`Real-time Security Scan - ${workspaceId}`, 'scanning for vulnerabilities');
+        
+        // Show progress
+        document.getElementById('progressContainer').style.display = 'block';
+        document.getElementById('commandOutput').style.display = 'none';
+        
+        const updateProgress = (percent, text) => {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').textContent = text;
+        };
+        
+        updateProgress(10, 'Initializing security scan...');
+        setTimeout(() => updateProgress(30, 'Scanning for hardcoded secrets...'), 500);
+        setTimeout(() => updateProgress(50, 'Checking access controls...'), 1000);
+        setTimeout(() => updateProgress(70, 'Analyzing encryption settings...'), 1500);
+        setTimeout(() => updateProgress(90, 'Generating auto-fixes...'), 2000);
+        
+        fetch(`/terraform/workspaces/${workspaceId}/security-scan-realtime`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            updateProgress(100, 'Security scan complete!');
+            
+            setTimeout(() => {
+                document.getElementById('progressContainer').style.display = 'none';
+                document.getElementById('commandOutput').style.display = 'block';
+                
+                if (data.success) {
+                    securityScanData = data.security_report;
+                    currentSecurityWorkspaceId = workspaceId;
+                    
+                    const report = data.security_report;
+                    let output = `Real-time Security Scan Results\n${'='.repeat(60)}\n\n`;
+                    output += `🔍 Scan Time: ${new Date(report.scan_time).toLocaleString()}\n`;
+                    output += `🚨 Total Vulnerabilities: ${report.total_vulnerabilities}\n`;
+                    output += `🔥 Critical: ${report.critical} | High: ${report.high} | Medium: ${report.medium}\n`;
+                    output += `⚙️ Auto-fixes Available: ${report.auto_fixes_available}\n\n`;
+                    
+                    if (report.vulnerabilities.length > 0) {
+                        output += `Vulnerabilities Found:\n${'-'.repeat(40)}\n`;
+                        report.vulnerabilities.slice(0, 5).forEach(vuln => {
+                            const icon = vuln.severity === 'CRITICAL' ? '🚨' : vuln.severity === 'HIGH' ? '⚠️' : '🟡';
+                            output += `${icon} ${vuln.file}:${vuln.line} - ${vuln.description}\n`;
+                            output += `   Code: ${vuln.code}\n`;
+                            if (vuln.fix) {
+                                output += `   Fix: ${vuln.fix.substring(0, 60)}...\n`;
+                            }
+                            output += '\n';
+                        });
+                        
+                        if (report.vulnerabilities.length > 5) {
+                            output += `... and ${report.vulnerabilities.length - 5} more issues\n\n`;
+                        }
+                        
+                        output += `Next Steps:\n`;
+                        output += `1. Review all vulnerabilities above\n`;
+                        output += `2. Click 'Auto-Remediate' to fix automatically\n`;
+                        output += `3. Run security scan again to verify fixes\n`;
+                        output += `4. Manual review for complex issues`;
+                    } else {
+                        output += '✅ No security vulnerabilities detected!\n\nYour Terraform configuration follows security best practices.';
+                    }
+                    
+                    document.getElementById('commandOutput').textContent = output;
+                } else {
+                    document.getElementById('commandOutput').textContent = `❌ Security scan failed: ${data.error}`;
+                }
+            }, 500);
+        })
+        .catch(error => {
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('commandOutput').style.display = 'block';
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+    
+    function showSecurityMonitor(workspaceId) {
+        document.getElementById('securityMonitorWorkspaceId').value = workspaceId;
+        const modal = new bootstrap.Modal(document.getElementById('securityMonitorModal'));
+        
+        // Load security status
+        loadSecurityStatus(workspaceId);
+        
+        modal.show();
+    }
+    
+    function loadSecurityStatus(workspaceId) {
+        fetch(`/terraform/workspaces/${workspaceId}/security-monitor`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const status = data.security_status;
+                
+                document.getElementById('securityScore').textContent = status.security_score;
+                document.getElementById('securityScore').className = status.security_score >= 80 ? 'text-success' : status.security_score >= 60 ? 'text-warning' : 'text-danger';
+                
+                document.getElementById('issuesCount').textContent = status.issues_detected;
+                document.getElementById('issuesCount').className = status.issues_detected === 0 ? 'text-success' : 'text-danger';
+                
+                const statusBadge = document.getElementById('securityStatus');
+                statusBadge.textContent = status.status;
+                statusBadge.className = status.status === 'SECURE' ? 'badge bg-success' : 'badge bg-danger';
+                
+                document.getElementById('lastScan').textContent = status.last_scan ? new Date(status.last_scan).toLocaleString() : 'Never';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading security status:', error);
+        });
+    }
+    
+    function refreshSecurityStatus() {
+        const workspaceId = document.getElementById('securityMonitorWorkspaceId').value;
+        loadSecurityStatus(workspaceId);
+    }
+    
+    function runFullSecurityScan() {
+        const workspaceId = document.getElementById('securityMonitorWorkspaceId').value;
+        const modal = bootstrap.Modal.getInstance(document.getElementById('securityMonitorModal'));
+        modal.hide();
+        realtimeSecurityScan(workspaceId);
+    }
+    
+    function autoRemediate(workspaceId) {
+        if (!workspaceId) {
+            workspaceId = document.getElementById('securityMonitorWorkspaceId').value;
+        }
+        
+        // First run scan to get fixes
+        fetch(`/terraform/workspaces/${workspaceId}/security-scan-realtime`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.security_report.auto_fixes.length > 0) {
+                performAutoRemediation(workspaceId, data.security_report.auto_fixes);
+            } else {
+                alert('No auto-fixable issues found or scan failed');
+            }
+        })
+        .catch(error => {
+            alert('Error running security scan: ' + error.message);
+        });
+    }
+    
+    function autoRemediateIssues() {
+        const workspaceId = document.getElementById('securityMonitorWorkspaceId').value;
+        autoRemediate(workspaceId);
+    }
+    
+    function performAutoRemediation(workspaceId, fixes) {
+        if (!confirm(`Auto-remediate ${fixes.length} security issues?\n\nThis will modify your Terraform files automatically.`)) {
+            return;
+        }
+        
+        const modal = showCommandOutput(`Auto-Remediation - ${workspaceId}`, 'applying security fixes');
+        
+        fetch(`/terraform/workspaces/${workspaceId}/auto-remediate`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ fixes: fixes })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let output = `Security Auto-Remediation\n${'='.repeat(60)}\n\n`;
+                output += `✅ Successfully remediated ${data.remediated_count} security issues\n`;
+                output += `📄 Log File: ${data.log_file}\n\n`;
+                
+                output += `Remediated Issues:\n${'-'.repeat(30)}\n`;
+                data.remediated_issues.forEach(issue => {
+                    output += `• ${issue.file}:${issue.line}\n`;
+                    output += `  Before: ${issue.original}\n`;
+                    output += `  After:  ${issue.fixed}\n\n`;
+                });
+                
+                output += `Next Steps:\n`;
+                output += `1. Review the applied fixes\n`;
+                output += `2. Run 'terraform validate' to verify\n`;
+                output += `3. Run security scan again to confirm\n`;
+                output += `4. Test with 'terraform plan'`;
+                
+                document.getElementById('commandOutput').textContent = output;
+                
+                // Open remediation log
+                setTimeout(() => {
+                    window.open(`/file-browser?session=${workspaceId}&file=security-remediation.md`, '_blank');
+                }, 1000);
+            } else {
+                document.getElementById('commandOutput').textContent = `❌ Auto-remediation failed: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
 </script>
 {% endblock %}

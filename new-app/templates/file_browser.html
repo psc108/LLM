@@ -468,7 +468,27 @@
             </div>
         </div>
         <div class="chat-input-area">
-            <textarea class="chat-input" id="chat-input" placeholder="Ask about this file..."></textarea>
+            <!-- AI Assistant Actions -->
+            <div class="ai-actions" id="ai-actions" style="display: none; margin-bottom: 15px;">
+                <h6 style="margin-bottom: 10px; color: var(--text-secondary);">AI Assistant</h6>
+                <select id="ai-model-select" style="width: 100%; padding: 5px; margin-bottom: 10px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px;">
+                    <option value="">Loading models...</option>
+                </select>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                    <button class="btn btn-sm btn-success" onclick="aiAction('generate')" title="Generate from Text">
+                        <i class="fas fa-magic"></i> Generate
+                    </button>
+                    <button class="btn btn-sm btn-warning" onclick="aiAction('recommend')" title="Get Recommendations">
+                        <i class="fas fa-lightbulb"></i> Recommend
+                    </button>
+                    <button class="btn btn-sm btn-info" onclick="aiAction('fix')" title="Auto-fix Errors">
+                        <i class="fas fa-wrench"></i> Auto-fix
+                    </button>
+                </div>
+                <hr style="border-color: var(--border-color); margin: 10px 0;">
+            </div>
+            
+            <textarea class="chat-input" id="chat-input" placeholder="Ask about this file or use AI actions above..."></textarea>
             <button class="btn btn-primary chat-send-btn" onclick="sendChatMessage()">
                 <i class="fas fa-paper-plane"></i> Send
             </button>
@@ -753,16 +773,14 @@
     function updateLineNumbers() {
         const editor = document.getElementById('code-editor');
         const lineNumbers = document.getElementById('line-numbers');
-        const lines = editor.value.split('\n');
+        const content = editor.value || '';
+        const lines = content.split('\n');
         
-        let lineNumbersHtml = '';
-        for (let i = 1; i <= lines.length; i++) {
-            lineNumbersHtml += `<div>${i}</div>`;
+        const lineNumbersArray = [];
+        for (let i = 1; i <= Math.max(lines.length, 1); i++) {
+            lineNumbersArray.push(i);
         }
-        lineNumbers.innerHTML = lineNumbersHtml;
-        
-        // Sync scroll
-        lineNumbers.scrollTop = editor.scrollTop;
+        lineNumbers.textContent = lineNumbersArray.join('\n');
     }
 
     function showWelcomeScreen() {
@@ -840,7 +858,8 @@
     });
 
     document.getElementById('code-editor').addEventListener('scroll', function() {
-        document.getElementById('line-numbers').scrollTop = this.scrollTop;
+        const lineNumbers = document.getElementById('line-numbers');
+        lineNumbers.scrollTop = this.scrollTop;
     });
 
     // Track cursor position
@@ -1037,6 +1056,141 @@
             sendChatMessage();
         }
     });
+
+    // AI Assistant actions
+    async function loadAvailableModels() {
+        try {
+            const response = await fetch('/api/model-status');
+            const result = await response.json();
+            
+            const select = document.getElementById('ai-model-select');
+            select.innerHTML = '';
+            
+            if (result.ollama && result.ollama.models && result.ollama.models.length > 0) {
+                result.ollama.models.forEach(model => {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    if (model === result.active_model) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            } else {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No models available';
+                select.appendChild(option);
+            }
+        } catch (error) {
+            console.error('Error loading models:', error);
+            const select = document.getElementById('ai-model-select');
+            select.innerHTML = '<option value="">Error loading models</option>';
+        }
+    }
+    
+    function detectTerraformWorkspace() {
+        if (projectStructure) {
+            const hasTerraformFiles = checkForTerraformFiles(projectStructure);
+            const actionsDiv = document.getElementById('ai-actions');
+            if (hasTerraformFiles) {
+                actionsDiv.style.display = 'block';
+                loadAvailableModels();
+            } else {
+                actionsDiv.style.display = 'none';
+            }
+        }
+    }
+    
+    function checkForTerraformFiles(structure) {
+        for (const [name, value] of Object.entries(structure)) {
+            if (value === null && name.endsWith('.tf')) {
+                return true;
+            } else if (value !== null && checkForTerraformFiles(value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    async function aiAction(action) {
+        if (!sessionId) {
+            addChatMessage('❌ No workspace session found', 'assistant');
+            return;
+        }
+        
+        addChatMessage(`🤖 Running AI ${action}...`, 'assistant');
+        
+        try {
+            let endpoint = '';
+            let body = {};
+            
+            switch(action) {
+                case 'generate':
+                    const request = prompt('Describe what you want to create:', 'Create a VPC with 3 subnets and security groups');
+                    if (!request) return;
+                    endpoint = `/terraform/workspaces/${sessionId}/ai-generate`;
+                    body = { request: request, model: document.getElementById('ai-model-select').value };
+                    break;
+                case 'recommend':
+                    endpoint = `/terraform/workspaces/${sessionId}/ai-recommend`;
+                    body = { model: document.getElementById('ai-model-select').value };
+                    break;
+                case 'fix':
+                    endpoint = `/terraform/workspaces/${sessionId}/ai-fix`;
+                    body = { model: document.getElementById('ai-model-select').value };
+                    break;
+                default:
+                    addChatMessage(`❌ Unknown AI action: ${action}`, 'assistant');
+                    return;
+            }
+            
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                let message = `✅ AI ${action} completed!\n\n`;
+                
+                switch(action) {
+                    case 'generate':
+                        message += `📝 Request: "${result.request}"\n📄 File: ${result.file_created}\n\n🔍 Preview:\n${result.generated_code?.substring(0, 400) || 'No code'}...`;
+                        break;
+                    case 'recommend':
+                        message += `📄 File: ${result.file_created}\n\n💡 Recommendations:\n${result.recommendations?.substring(0, 500) || 'No recommendations'}...`;
+                        break;
+                    case 'fix':
+                        message += `📄 File: ${result.file_created}\n🔧 Errors Analyzed: ${result.errors_analyzed} chars\n\n🛠️ Fixes:\n${result.fixes?.substring(0, 400) || 'No fixes'}...`;
+                        break;
+                }
+                
+                addChatMessage(message, 'assistant');
+                
+                // Refresh file tree and open created file
+                setTimeout(() => {
+                    refreshFileTree();
+                    if (result.file_created) {
+                        setTimeout(() => autoSelectFile(result.file_created), 500);
+                    }
+                }, 1000);
+            } else {
+                addChatMessage(`❌ AI ${action} failed: ${result.error}`, 'assistant');
+            }
+        } catch (error) {
+            addChatMessage(`❌ Error running AI ${action}: ${error.message}`, 'assistant');
+        }
+    }
+    
+    // Override renderFileTree to detect Terraform files
+    const originalRenderFileTree = renderFileTree;
+    renderFileTree = function(structure) {
+        originalRenderFileTree(structure);
+        detectTerraformWorkspace();
+    };
 
     // Make function available globally for parent window
     window.initializeFileBrowser = initializeFileBrowser;

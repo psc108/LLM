@@ -172,9 +172,32 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label">Available Models:</label>
-                    <select class="form-select" id="modelSelect">
-                        <option value="">Loading models...</option>
-                    </select>
+                    <div class="input-group">
+                        <select class="form-select" id="modelSelect">
+                            <option value="">Loading models...</option>
+                        </select>
+                        <button class="btn btn-outline-info" type="button" onclick="showModelInfo()" title="Model Information">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                    <div id="modelInfo" class="alert alert-info mt-2" style="display: none;"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Analysis Settings:</label>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Timeout (seconds)</label>
+                            <input type="number" class="form-control" id="analysisTimeout" value="120" min="30" max="600">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Max Tokens</label>
+                            <input type="number" class="form-control" id="maxTokens" value="2500" min="500" max="8000">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Content Length</label>
+                            <input type="number" class="form-control" id="contentLength" value="500" min="100" max="2000">
+                        </div>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Or download a new model:</label>
@@ -593,13 +616,22 @@
                             <td>${workspace.config.environment || '-'}</td>
                             <td><span class="badge bg-${workspace.status === 'applied' ? 'success' : 'warning'}">${workspace.status}</span></td>
                             <td>
-                                <div class="btn-group btn-group-sm">
-                                    <button class="btn btn-outline-primary" onclick="viewWorkspace('${workspace.workspace_id}')">View</button>
-                                    <button class="btn btn-outline-info" onclick="initWorkspace('${workspace.workspace_id}')">Init</button>
-                                    <button class="btn btn-outline-success" onclick="planWorkspace('${workspace.workspace_id}')">Plan</button>
-                                    <button class="btn btn-outline-warning" onclick="analyzeWorkspace('${workspace.workspace_id}')">AI Analysis</button>
-                                    <button class="btn btn-outline-danger" onclick="destroyWorkspace('${workspace.workspace_id}')">Destroy</button>
-                                    <button class="btn btn-outline-secondary" onclick="deleteWorkspace('${workspace.workspace_id}')">Delete</button>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        Actions
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" style="max-height: none; overflow: visible;">
+                                        <li><a class="dropdown-item" href="#" onclick="viewWorkspace('${workspace.workspace_id}')"><i class="fas fa-eye me-2"></i>View</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="initWorkspace('${workspace.workspace_id}')"><i class="fas fa-play me-2"></i>Init</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="planWorkspace('${workspace.workspace_id}')"><i class="fas fa-clipboard-list me-2"></i>Plan</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="#" onclick="analyzeWorkspace('${workspace.workspace_id}')"><i class="fas fa-robot me-2"></i>AI Analysis</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="analyzeCosts('${workspace.workspace_id}')"><i class="fas fa-dollar-sign me-2"></i>Cost Analysis</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="analyzeWorkspaceSecurity('${workspace.workspace_id}')"><i class="fas fa-shield-alt me-2"></i>Security Scan</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-warning" href="#" onclick="destroyWorkspace('${workspace.workspace_id}')"><i class="fas fa-bomb me-2"></i>Destroy</a></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteWorkspace('${workspace.workspace_id}')"><i class="fas fa-trash me-2"></i>Delete</a></li>
+                                    </ul>
                                 </div>
                             </td>
                         </tr>`;
@@ -775,9 +807,18 @@ Files: ${workspace.files.join(', ') || 'None'}`;
         loadAvailableModels();
     }
 
+    const modelInfo = {
+        'llama3.2:1b': { size: '1B', speed: 'Very Fast', timeout: 60, tokens: 1500, content: 300, desc: 'Fastest option, good for quick analysis' },
+        'llama3.2:3b': { size: '3B', speed: 'Fast', timeout: 90, tokens: 2000, content: 400, desc: 'Good balance of speed and quality' },
+        'llama3.1:8b': { size: '8B', speed: 'Medium', timeout: 180, tokens: 3000, content: 600, desc: 'High quality analysis, needs more RAM' },
+        'codellama:7b-instruct': { size: '7B', speed: 'Medium', timeout: 150, tokens: 2500, content: 500, desc: 'Optimized for code analysis' },
+        'codellama:13b-instruct': { size: '13B', speed: 'Slow', timeout: 300, tokens: 4000, content: 800, desc: 'Best code analysis quality, requires 16GB+ RAM' },
+        'qwen2.5-coder:7b': { size: '7B', speed: 'Medium', timeout: 120, tokens: 2500, content: 500, desc: 'Excellent for code review and security analysis' },
+        'deepseek-coder:6.7b': { size: '6.7B', speed: 'Medium', timeout: 120, tokens: 2500, content: 500, desc: 'Strong coding capabilities' }
+    };
+
     function loadAvailableModels() {
         console.log('Loading available models...');
-        // Use the app's model status endpoint
         fetch('/api/model-status')
             .then(response => response.json())
             .then(data => {
@@ -792,6 +833,9 @@ Files: ${workspace.files.join(', ') || 'None'}`;
                         option.textContent = modelName;
                         select.appendChild(option);
                     });
+                    
+                    // Add change listener to update settings
+                    select.addEventListener('change', updateModelSettings);
                     console.log('Added models to dropdown:', data.ollama.models);
                 } else {
                     select.innerHTML = '<option value="">No models available</option>';
@@ -802,6 +846,48 @@ Files: ${workspace.files.join(', ') || 'None'}`;
                 console.error('Error loading models:', error);
                 document.getElementById('modelSelect').innerHTML = '<option value="">Error loading models</option>';
             });
+    }
+
+    function showModelInfo() {
+        const selectedModel = document.getElementById('modelSelect').value;
+        const infoDiv = document.getElementById('modelInfo');
+        
+        if (!selectedModel) {
+            infoDiv.innerHTML = 'Please select a model first.';
+            infoDiv.style.display = 'block';
+            return;
+        }
+        
+        const info = getModelInfo(selectedModel);
+        infoDiv.innerHTML = `<strong>${selectedModel}</strong><br>
+            ${info.desc}<br>
+            <small><strong>Size:</strong> ${info.size} | <strong>Speed:</strong> ${info.speed} | <strong>Recommended timeout:</strong> ${info.timeout}s</small>`;
+        infoDiv.style.display = 'block';
+    }
+
+    function getModelInfo(modelName) {
+        // Check for exact match first
+        if (modelInfo[modelName]) return modelInfo[modelName];
+        
+        // Check for partial matches
+        for (const key in modelInfo) {
+            if (modelName.includes(key.split(':')[0])) {
+                return modelInfo[key];
+            }
+        }
+        
+        // Default fallback
+        return { size: 'Unknown', speed: 'Medium', timeout: 120, tokens: 2500, content: 500, desc: 'General purpose model' };
+    }
+
+    function updateModelSettings() {
+        const selectedModel = document.getElementById('modelSelect').value;
+        if (!selectedModel) return;
+        
+        const info = getModelInfo(selectedModel);
+        document.getElementById('analysisTimeout').value = info.timeout;
+        document.getElementById('maxTokens').value = info.tokens;
+        document.getElementById('contentLength').value = info.content;
     }
 
     function downloadModel() {
@@ -858,14 +944,24 @@ Files: ${workspace.files.join(', ') || 'None'}`;
             fetch('/api/download-progress')
                 .then(response => response.json())
                 .then(data => {
+                    console.log('Download progress:', data);
                     const progressBar = document.getElementById('downloadProgressBar');
                     const statusText = document.getElementById('downloadStatus');
                     
                     progressBar.style.width = data.progress + '%';
-                    statusText.textContent = data.status || 'Downloading...';
+                    
+                    // Show size info if available
+                    let statusMsg = data.status || 'Downloading...';
+                    if (data.total && data.total !== 'Unknown' && data.completed) {
+                        statusMsg += ` (${data.completed}/${data.total})`;
+                    }
+                    if (data.speed) {
+                        statusMsg += ` - ${data.speed}`;
+                    }
+                    statusText.textContent = statusMsg;
                     
                     if (data.downloading) {
-                        setTimeout(poll, 1000); // Poll every second
+                        setTimeout(poll, 1000);
                     } else if (data.progress >= 100 || !data.downloading) {
                         statusText.textContent = 'Download complete!';
                         setTimeout(() => {
@@ -874,8 +970,9 @@ Files: ${workspace.files.join(', ') || 'None'}`;
                         }, 1000);
                     }
                 })
-                .catch(() => {
-                    setTimeout(poll, 2000); // Retry after 2 seconds on error
+                .catch(error => {
+                    console.error('Progress poll error:', error);
+                    setTimeout(poll, 2000);
                 });
         };
         poll();
@@ -888,15 +985,22 @@ Files: ${workspace.files.join(', ') || 'None'}`;
             return;
         }
         
+        // Get analysis settings
+        const settings = {
+            timeout: parseInt(document.getElementById('analysisTimeout').value),
+            maxTokens: parseInt(document.getElementById('maxTokens').value),
+            contentLength: parseInt(document.getElementById('contentLength').value)
+        };
+        
         // Close model selection modal
         const modelModal = bootstrap.Modal.getInstance(document.getElementById('modelSelectionModal'));
         modelModal.hide();
         
         // Start analysis
-        runAnalysisWithSelectedModel(currentWorkspaceId, selectedModel);
+        runAnalysisWithSelectedModel(currentWorkspaceId, selectedModel, settings);
     }
 
-    function runAnalysisWithSelectedModel(workspaceId, modelName) {
+    function runAnalysisWithSelectedModel(workspaceId, modelName, settings = {}) {
         const modal = showCommandOutput(`AI Analysis - ${workspaceId}`, 'AI analysis');
         
         // Show progress bar
@@ -943,7 +1047,12 @@ Files: ${workspace.files.join(', ') || 'None'}`;
         fetch(`/terraform/workspaces/${workspaceId}/analyze`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ model: modelName })
+            body: JSON.stringify({ 
+                model: modelName,
+                timeout: settings.timeout || 120,
+                maxTokens: settings.maxTokens || 2500,
+                contentLength: settings.contentLength || 500
+            })
         })
         .then(response => response.json())
         .then(data => {
@@ -1007,6 +1116,138 @@ Files: ${workspace.files.join(', ') || 'None'}`;
         });
     }
 
+    function analyzeCosts(workspaceId) {
+        const modal = showCommandOutput(`Cost Analysis - ${workspaceId}`, 'cost analysis');
+        
+        fetch(`/api/project/${workspaceId}/cost-analysis`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const analysis = data.cost_analysis;
+                let output = `AWS Cost Analysis\n${'='.repeat(50)}\n\n`;
+                output += `💰 Estimated Monthly Cost: $${analysis.total_monthly_cost.toFixed(2)}\n`;
+                output += `📅 Estimated Yearly Cost: $${analysis.total_yearly_cost.toFixed(2)}\n`;
+                output += `📊 Total Resources: ${analysis.resource_count}\n\n`;
+                
+                output += `Cost Breakdown:\n${'-'.repeat(30)}\n`;
+                analysis.cost_breakdown.forEach(item => {
+                    output += `• ${item.description}: $${item.monthly_cost.toFixed(2)}/month\n`;
+                });
+                
+                output += `\nCost by Category:\n${'-'.repeat(30)}\n`;
+                Object.entries(analysis.cost_categories).forEach(([category, cost]) => {
+                    if (cost > 0) {
+                        output += `• ${category}: $${cost.toFixed(2)}/month\n`;
+                    }
+                });
+                
+                if (analysis.recommendations.length > 0) {
+                    output += `\nRecommendations:\n${'-'.repeat(30)}\n`;
+                    analysis.recommendations.forEach(rec => {
+                        output += `${rec}\n`;
+                    });
+                }
+                
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `Error: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+
+    function analyzeWorkspaceSecurity(workspaceId) {
+        const modal = showCommandOutput(`Security Scan - ${workspaceId}`, 'security analysis');
+        
+        fetch(`/api/project/${workspaceId}/security-analysis`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const analysis = data.security_analysis;
+                let output = `Security Analysis Report\n${'='.repeat(50)}\n\n`;
+                output += `🔍 Files Analyzed: ${analysis.files_analyzed}\n`;
+                output += `⚠️ Total Issues: ${analysis.total_issues}\n`;
+                output += `🎯 Risk Score: ${analysis.risk_score}\n`;
+                
+                if (analysis.tools_used) {
+                    output += `🔧 Tools Used: ${analysis.tools_used.join(', ')}\n`;
+                }
+                
+                if (analysis.tool_summaries) {
+                    output += `\nTool Results:\n${'-'.repeat(20)}\n`;
+                    analysis.tool_summaries.forEach(summary => {
+                        output += `${summary}\n`;
+                    });
+                }
+                output += `\n`;
+                
+                output += `Issues by Severity:\n${'-'.repeat(30)}\n`;
+                Object.entries(analysis.severity_breakdown).forEach(([severity, count]) => {
+                    if (count > 0) {
+                        const icon = severity === 'CRITICAL' ? '🚨' : severity === 'HIGH' ? '⚠️' : severity === 'MEDIUM' ? '⚡' : 'ℹ️';
+                        output += `${icon} ${severity}: ${count}\n`;
+                    }
+                });
+                
+                if (analysis.issues.length > 0) {
+                    output += `\nDetailed Issues:\n${'-'.repeat(30)}\n`;
+                    analysis.issues.forEach(issue => {
+                        const icon = issue.severity === 'CRITICAL' ? '🚨' : issue.severity === 'HIGH' ? '⚠️' : issue.severity === 'MEDIUM' ? '⚡' : 'ℹ️';
+                        output += `${icon} ${issue.file}:${issue.line} - ${issue.message}\n`;
+                        output += `   Code: ${issue.code}\n\n`;
+                    });
+                }
+                
+                if (analysis.recommendations.length > 0) {
+                    output += `Security Recommendations:\n${'-'.repeat(30)}\n`;
+                    analysis.recommendations.forEach(rec => {
+                        output += `${rec}\n`;
+                    });
+                }
+                
+                document.getElementById('commandOutput').textContent = output;
+                
+                // Create security report file
+                if (data.success && analysis.total_issues >= 0) {
+                    createSecurityReportFile(workspaceId, output);
+                }
+            } else {
+                document.getElementById('commandOutput').textContent = `Error: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+
+    function createSecurityReportFile(workspaceId, report) {
+        const content = `# Security Analysis Report\n\nGenerated: ${new Date().toISOString()}\nWorkspace: ${workspaceId}\nTool: Internal Security Analyzer v1.0\nCoverage: Terraform, AWS, Python, YAML, Dockerfile security patterns\n\n${report}`;
+        
+        fetch(`/terraform/workspaces/${workspaceId}/security-report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: content })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Open in file browser
+                window.open(`/file-browser?session=${workspaceId}&file=security-report.md`, '_blank');
+            }
+        })
+        .catch(error => {
+            console.error('Error creating security report file:', error);
+        });
+    }
+
     function deleteWorkspace(workspaceId) {
         if (confirm(`Are you sure you want to delete workspace ${workspaceId}?\n\nThis will permanently remove the workspace and all its files!`)) {
             fetch(`/terraform/workspaces/${workspaceId}`, {
@@ -1031,7 +1272,7 @@ Files: ${workspace.files.join(', ') || 'None'}`;
         }
     }
     
-    // Add CSS for project cards
+    // Add CSS for project cards and dropdown fixes
     const style = document.createElement('style');
     style.textContent = `
         .project-card {
@@ -1041,6 +1282,13 @@ Files: ${workspace.files.join(', ') || 'None'}`;
         .project-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .table-responsive {
+            overflow: visible !important;
+        }
+        .dropdown-menu {
+            position: absolute !important;
+            z-index: 1050 !important;
         }
     `;
     document.head.appendChild(style);

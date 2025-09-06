@@ -306,8 +306,11 @@ def analyze_workspace(workspace_id):
         # Send to Ollama
         import requests
         
-        # Get model from request data
+        # Get model and settings from request data
         data = request.get_json() or {}
+        timeout = data.get('timeout', 120)
+        max_tokens = data.get('maxTokens', 2500)
+        content_length = data.get('contentLength', 500)
         
         # Use same Ollama configuration as main app
         ollama_host = os.environ.get('OLLAMA_HOST', 'localhost')
@@ -318,11 +321,11 @@ def analyze_workspace(workspace_id):
         logger.info(f"Attempting to connect to Ollama at {ollama_url} with model {model_name}")
         
         try:
-            # Extremely simple request
+            # Use configurable content length
             first_file = list(tf_files.items())[0] if tf_files else ('', '')
-            short_content = first_file[1][:200]  # Very short content
+            short_content = first_file[1][:content_length]
             
-            prompt = f"Analyze this code for security issues, best practices, and improvements. Consider the language and provide specific recommendations:\n\n{short_content}\n\nProvide analysis covering:\n1. Security vulnerabilities\n2. Code quality issues\n3. Best practices\n4. Performance optimizations\n5. Specific recommendations"
+            prompt = f"Analyze this Terraform code:\n\n{short_content}\n\nProvide 3 key recommendations for security and best practices."
             
             # Check available models first
             models_response = requests.get(f"http://{ollama_host}:{ollama_port}/api/tags", timeout=5)
@@ -351,9 +354,9 @@ def analyze_workspace(workspace_id):
                     'model': model_to_use,
                     'prompt': prompt,
                     'stream': False,
-                    'options': {'temperature': 0.1, 'num_predict': 2500}
+                    'options': {'temperature': 0.1, 'num_predict': max_tokens}
                 },
-                timeout=60
+                timeout=timeout
             )
             
             logger.info(f"Ollama response status: {response.status_code}")
@@ -410,6 +413,36 @@ def create_recommendations(workspace_id):
         return jsonify({
             'success': True,
             'file_path': 'recommendations.md'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@terraform_bp.route('/workspaces/<workspace_id>/security-report', methods=['POST'])
+def create_security_report(workspace_id):
+    """Create security report file in workspace."""
+    try:
+        workspace_path = os.path.join(WORKSPACE_DIR, workspace_id)
+        if not os.path.exists(workspace_path):
+            return jsonify({
+                'success': False,
+                'error': f'Workspace {workspace_id} not found'
+            }), 404
+        
+        data = request.get_json()
+        content = data.get('content', '')
+        
+        # Write security report file
+        security_report_path = os.path.join(workspace_path, 'security-report.md')
+        with open(security_report_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        return jsonify({
+            'success': True,
+            'file_path': 'security-report.md'
         })
         
     except Exception as e:

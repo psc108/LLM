@@ -496,6 +496,13 @@ def get_download_progress():
     progress_copy = download_progress.copy()
     if isinstance(progress_copy.get('completed_layers'), set):
         progress_copy['completed_layers'] = list(progress_copy['completed_layers'])
+    
+    # Add debug info
+    progress_copy['debug'] = {
+        'api_calls': progress_copy.get('api_call_count', 0),
+        'last_status': progress_copy.get('status', 'Unknown')
+    }
+    
     return jsonify(progress_copy)
 
 @app.route('/api/upload-project', methods=['POST'])
@@ -1033,6 +1040,149 @@ Please provide:
         logger.error(f"Error in project analysis: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/project/<session_id>/security-analysis', methods=['GET', 'POST'])
+def analyze_project_security(session_id):
+    """Analyze project for security issues"""
+    try:
+        logger.info(f"Security analysis request for session: {session_id}")
+        
+        # Use terraform workspace directory directly
+        terraform_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'terraform')
+        project_dir = os.path.join(terraform_dir, 'workspaces', session_id)
+        
+        logger.info(f"Looking for workspace at: {project_dir}")
+        logger.info(f"Workspace exists: {os.path.exists(project_dir)}")
+        
+        if not os.path.exists(project_dir):
+            # Try alternative path structure
+            alt_terraform_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'terraform', 'terraform')
+            alt_project_dir = os.path.join(alt_terraform_dir, 'workspaces', session_id)
+            logger.info(f"Trying alternative path: {alt_project_dir}")
+            
+            if os.path.exists(alt_project_dir):
+                project_dir = alt_project_dir
+            else:
+                return jsonify({'success': False, 'error': 'Workspace not found'}), 404
+        
+        # Collect workspace files only (no subdirectories)
+        files = {}
+        logger.info(f"Scanning directory: {project_dir}")
+        
+        if os.path.isdir(project_dir):
+            for filename in os.listdir(project_dir):
+                file_path = os.path.join(project_dir, filename)
+                if os.path.isfile(file_path):  # Only files, not directories
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            files[filename] = f.read()
+                        logger.info(f"Added file for analysis: {filename}")
+                    except Exception as e:
+                        logger.warning(f"Could not read file {filename}: {e}")
+                        continue
+        
+        logger.info(f"Total files collected for analysis: {len(files)}")
+        
+        if not files:
+            return jsonify({
+                'success': False,
+                'error': 'No files found for security analysis'
+            }), 404
+        
+        # Analyze security with multiple tools
+        try:
+            from security_analyzer import analyze_project_security
+            security_analysis = analyze_project_security(files, project_dir)
+            logger.info(f"Security analysis completed successfully")
+        except Exception as analysis_error:
+            logger.error(f"Security analysis error: {analysis_error}")
+            return jsonify({'success': False, 'error': f'Analysis failed: {str(analysis_error)}'}), 500
+        
+        return jsonify({
+            'success': True,
+            'security_analysis': security_analysis
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in security analysis endpoint: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/project/<session_id>/cost-analysis', methods=['GET', 'POST'])
+def analyze_project_costs(session_id):
+    """Analyze AWS costs for a project"""
+    try:
+        logger.info(f"Cost analysis request for session: {session_id}")
+        
+        # Get region parameter
+        region = 'us-east-1'
+        if request.method == 'POST':
+            try:
+                data = request.get_json() or {}
+                region = data.get('region', 'us-east-1')
+            except Exception as e:
+                logger.warning(f"Error parsing JSON: {e}")
+        else:
+            region = request.args.get('region', 'us-east-1')
+        
+        logger.info(f"Using region: {region}")
+        
+        # Check if it's a terraform workspace first
+        terraform_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'terraform', 'terraform')
+        terraform_workspace_dir = os.path.join(terraform_dir, 'workspaces', session_id)
+        
+        if os.path.exists(terraform_workspace_dir):
+            project_dir = terraform_workspace_dir
+        else:
+            session_dir = os.path.join(UPLOAD_FOLDER, session_id)
+            if not os.path.exists(session_dir):
+                return jsonify({'success': False, 'error': 'Session not found'}), 404
+            
+            # Determine project directory
+            project_dir = os.path.join(session_dir, 'extracted')
+            if not os.path.exists(project_dir):
+                project_dir = os.path.join(session_dir, 'project')
+            if not os.path.exists(project_dir):
+                project_dir = session_dir
+        
+        # Collect Terraform files
+        tf_files = {}
+        for root, dirs, files in os.walk(project_dir):
+            for file in files:
+                if file.endswith(('.tf', '.tfvars')):
+                    file_path = os.path.join(root, file)
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            tf_files[file] = f.read()
+                    except Exception:
+                        continue
+        
+        if not tf_files:
+            return jsonify({
+                'success': False,
+                'error': 'No Terraform files found in project'
+            }), 404
+        
+        # Import and analyze costs
+        try:
+            from cost_analyzer import analyze_terraform_costs
+            cost_analysis = analyze_terraform_costs(tf_files, region)
+            logger.info(f"Cost analysis completed successfully")
+        except Exception as analysis_error:
+            logger.error(f"Cost analysis error: {analysis_error}")
+            return jsonify({'success': False, 'error': f'Analysis failed: {str(analysis_error)}'}), 500
+        
+        return jsonify({
+            'success': True,
+            'cost_analysis': cost_analysis
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in cost analysis endpoint: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/project/<session_id>/cleanup', methods=['DELETE'])
 def cleanup_project(session_id):
     """Clean up uploaded project files"""
@@ -1124,99 +1274,113 @@ def parse_download_line(line):
     global download_progress
 
     line = line.strip()
-    logger.debug(f"Download output: {line}")
+    logger.info(f"Download output: {line}")
 
-    # Track layer downloads and extract ID to avoid reset
-    layer_id = None
-    if 'pulling' in line and '...' in line:
-        layer_match = re.search(r'pulling\s+([a-f0-9]+)\.\.\.', line)
-        if layer_match:
-            layer_id = layer_match.group(1)
-            download_progress['file_name'] = layer_id
+    # Initialize completed_layers as set if not exists
+    if 'completed_layers' not in download_progress:
+        download_progress['completed_layers'] = set()
+    elif isinstance(download_progress['completed_layers'], list):
+        download_progress['completed_layers'] = set(download_progress['completed_layers'])
 
-            # Ensure completed_layers is initialized as a set
-            if 'completed_layers' not in download_progress:
-                download_progress['completed_layers'] = set()
-            elif isinstance(download_progress['completed_layers'], list):
-                download_progress['completed_layers'] = set(download_progress['completed_layers'])
+    # Process special status messages first
+    if 'pulling manifest' in line.lower() or 'getting manifest' in line.lower():
+        download_progress.update({
+            'status': 'Getting manifest...',
+            'progress': 5
+        })
+        logger.info("Download status: Getting manifest...")
+        return
+    elif 'verifying sha256 digest' in line.lower():
+        download_progress.update({
+            'status': 'Verifying download...',
+            'progress': 95
+        })
+        logger.info("Download status: Verifying download...")
+        return
+    elif 'writing manifest' in line.lower():
+        download_progress.update({
+            'status': 'Installing model...',
+            'progress': 98
+        })
+        logger.info("Download status: Installing model...")
+        return
+    elif 'success' in line.lower() and len(line.strip()) < 20:
+        download_progress.update({
+            'downloading': False,
+            'status': 'Download complete!',
+            'progress': 100,
+            'completion_time': time.time()
+        })
+        logger.info("Model download completed successfully!")
+        return
 
-            # Check if this is a new layer
-            if layer_id not in download_progress['completed_layers']:
-                download_progress['current_layer'] = layer_id
-
-    # Process special status messages
-    status_messages = {
-        'pulling manifest': ('Initializing download...', 2),
-        'verifying sha256 digest': ('Verifying download...', 95),
-        'writing manifest': ('Installing model...', 98),
-        'success': ('Download complete!', 100)
-    }
-
-    for key, (status, progress) in status_messages.items():
-        if key in line:
-            download_progress.update({
-                'status': status,
-                'progress': progress
-            })
-            if key == 'success':
-                download_progress.update({
-                    'downloading': False,
-                    'completion_time': time.time()
-                })
-                logger.info("Model download completed successfully!")
-            logger.info(f"Download status: {status}")
-            return
-
-    # Process layer download progress
-    if 'pulling' in line and '%' in line:
+    # Parse layer download progress - look for patterns like:
+    # "pulling 8daa9615cce9: 100%  ▕████████████████▏ 1.7 GB/1.7 GB  45 MB/s    39s"
+    if 'pulling' in line and (':' in line or '%' in line):
         try:
-            # Extract percentage
+            # Extract layer ID if present
+            layer_id = None
+            layer_match = re.search(r'pulling\s+([a-f0-9]+)', line)
+            if layer_match:
+                layer_id = layer_match.group(1)
+                download_progress['current_layer'] = layer_id
+            
+            # Extract percentage - more flexible pattern
             percent_match = re.search(r'(\d+)%', line)
             if percent_match:
                 progress_percent = int(percent_match.group(1))
-
-                # Scale to 5-90% range to leave room for setup and finalization
-                scaled_progress = 5 + int((progress_percent * 0.85))
-
-                # Track the current layer's progress
+                
+                # Extract size info with more flexible pattern
+                size_match = re.search(r'([\d.]+)\s*([KMGT]?B)\s*/\s*([\d.]+)\s*([KMGT]?B)', line)
+                if size_match:
+                    completed_size, completed_unit, total_size, total_unit = size_match.groups()
+                    download_progress.update({
+                        'completed': f"{completed_size} {completed_unit}",
+                        'total': f"{total_size} {total_unit}"
+                    })
+                
+                # Extract speed with more flexible pattern
+                speed_match = re.search(r'([\d.]+)\s*([KMGT]?B/s)', line)
+                if speed_match:
+                    speed, speed_unit = speed_match.groups()
+                    download_progress['speed'] = f"{speed} {speed_unit}"
+                
+                # Scale progress to 10-90% range
+                scaled_progress = 10 + int((progress_percent * 0.80))
+                
+                # Track layer progress
                 if layer_id:
                     if 'layer_progress' not in download_progress:
                         download_progress['layer_progress'] = {}
-
-                    download_progress['layer_progress'][layer_id] = scaled_progress
-
-                    # When a layer hits 100%, mark it as completed
-                    if progress_percent >= 99:
+                    download_progress['layer_progress'][layer_id] = progress_percent
+                    
+                    # Mark layer as completed if 100%
+                    if progress_percent >= 100:
                         download_progress['completed_layers'].add(layer_id)
-
-                # Only update if it's an increase (prevents dropping back to 0%)
-                if scaled_progress > download_progress['progress']:
-                    download_progress['progress'] = scaled_progress
-                    logger.debug(f"Updated progress to {scaled_progress}%")
-
-            # Extract size info (e.g., "4.1 GB/4.1 GB")
-            size_match = re.search(r'(\d+\.?\d*)\s*([KMGT]?B)/(\d+\.?\d*)\s*([KMGT]?B)', line)
-            if size_match:
-                completed, completed_unit, total, total_unit = size_match.groups()
-                download_progress.update({
-                    'completed': f"{completed} {completed_unit}",
-                    'total': f"{total} {total_unit}",
-                })
-
-            # Extract speed (e.g., "125 MB/s")
-            speed_match = re.search(r'(\d+\.?\d*)\s*([KMGT]?B/s)', line)
-            if speed_match:
-                speed, speed_unit = speed_match.groups()
-                download_progress['speed'] = f"{speed} {speed_unit}"
-
-            # Update status with layer info if available
-            if layer_id:
-                download_progress['status'] = f"Downloading file: {layer_id[:8]}... ({download_progress['progress']}%)"
-            else:
-                download_progress['status'] = f"Downloading model... ({download_progress['progress']}%)"
-
+                
+                # Update overall progress
+                download_progress['progress'] = scaled_progress
+                
+                # Update status with size info
+                if download_progress.get('total') and download_progress.get('total') != 'Unknown':
+                    download_progress['status'] = f"Downloading {download_progress['total']} ({progress_percent}%)"
+                elif layer_id:
+                    download_progress['status'] = f"Downloading layer {layer_id[:8]}... ({progress_percent}%)"
+                else:
+                    download_progress['status'] = f"Downloading... ({progress_percent}%)"
+                
+                logger.info(f"Download status: {download_progress['status']}")
+                return
         except Exception as e:
             logger.warning(f"Failed to parse download line: {line}, error: {e}")
+    
+    # Fallback for any other download-related lines
+    if any(keyword in line.lower() for keyword in ['downloading', 'pulling', 'fetching']) and download_progress.get('progress', 0) < 10:
+        download_progress.update({
+            'status': 'Starting download...',
+            'progress': 8
+        })
+        logger.info("Download status: Starting download...")
 
 @app.route('/health', methods=['GET'])
 @app.route('/api/model-status', methods=['GET'])
@@ -1295,7 +1459,11 @@ def health_check():
         else:
             status = "loading"
 
-        # Create response object
+        # Create response object with set conversion
+        progress_copy = download_progress.copy()
+        if isinstance(progress_copy.get('completed_layers'), set):
+            progress_copy['completed_layers'] = list(progress_copy['completed_layers'])
+        
         response_data = {
             'status': 'ok',  # Always return 'ok' for the frontend
             'actual_status': status,
@@ -1303,7 +1471,7 @@ def health_check():
             'active_model': active_model,
             'ollama': ollama_status,
             'system': system_info,
-            'download_progress': download_progress,
+            'download_progress': progress_copy,
             'timestamp': time.time()
         }
 
@@ -1318,11 +1486,15 @@ def health_check():
 
     except Exception as e:
         logger.error(f"Health check error: {e}")
+        progress_copy = download_progress.copy()
+        if isinstance(progress_copy.get('completed_layers'), set):
+            progress_copy['completed_layers'] = list(progress_copy['completed_layers'])
+        
         error_response = jsonify({
             'status': 'ok',  # Still return 'ok' for the frontend
             'actual_status': 'error',
             'error': str(e),
-            'download_progress': download_progress,
+            'download_progress': progress_copy,
             'timestamp': time.time()
         })
         return error_response
@@ -1629,22 +1801,28 @@ def download_model():
             'downloading': True,
             'model': model_id,
             'progress': 0,
-            'status': 'Starting download...',
-            'total': 0,
-            'completed': 0,
+            'status': 'Preparing download...',
+            'total': 'Unknown',
+            'completed': '0 B',
             'speed': '',
             'eta': '',
             'completed_layers': set(),
             'layer_progress': {},
-            'current_layer': None
+            'current_layer': None,
+            'download_attempt': download_progress.get('download_attempt', 0) + 1
         })
 
         def download_with_progress():
             """Download model with progress tracking in background thread"""
             try:
                 logger.info(f"Preparing to download model: {model_id}")
-                download_progress['status'] = "Starting download..."
-                download_progress['progress'] = 1
+                download_progress.update({
+                    'status': 'Initializing download...',
+                    'progress': 2,
+                    'total': 'Unknown',
+                    'completed': '0 B',
+                    'speed': ''
+                })
 
                 # Start the ollama pull process
                 process = subprocess.Popen(
@@ -1653,7 +1831,8 @@ def download_model():
                     stderr=subprocess.STDOUT,
                     text=True,
                     encoding='utf-8',
-                    bufsize=1
+                    bufsize=1,
+                    universal_newlines=True
                 )
 
                 logger.info(f"Started download process for model: {model_id}")
@@ -1661,25 +1840,31 @@ def download_model():
                 # Track time for stall detection
                 last_update_time = time.time()
                 last_progress = 0
+                output_buffer = []
 
                 # Read output line by line to track progress
-                for line in iter(process.stdout.readline, ''):
-                    if line:
-                        parse_download_line(line)
+                while True:
+                    line = process.stdout.readline()
+                    if not line:
+                        break
+                    
+                    output_buffer.append(line)
+                    parse_download_line(line)
 
-                        # Update time if progress changed
-                        if download_progress['progress'] != last_progress:
-                            last_update_time = time.time()
-                            last_progress = download_progress['progress']
+                    # Update time if progress changed
+                    current_progress = download_progress.get('progress', 0)
+                    if current_progress != last_progress:
+                        last_update_time = time.time()
+                        last_progress = current_progress
 
-                        # Check for stalled download
-                        if time.time() - last_update_time > 60:
-                            logger.warning("Download appears to be stalled - no progress for 60 seconds")
-                            download_progress['status'] = f"Download may be stalled... ({download_progress['progress']}%)"
+                    # Check for stalled download
+                    if time.time() - last_update_time > 120:  # 2 minutes
+                        logger.warning("Download appears to be stalled - no progress for 2 minutes")
+                        download_progress['status'] = f"Download may be stalled... ({current_progress}%)"
 
                 # Wait for process to complete
                 try:
-                    exit_code = process.wait(timeout=300)  # 5 minute timeout
+                    exit_code = process.wait(timeout=600)  # 10 minute timeout
 
                     if exit_code == 0:
                         download_progress.update({
@@ -1690,44 +1875,37 @@ def download_model():
                             'download_attempt': download_progress.get('download_attempt', 0) + 1
                         })
 
-                        # Convert set to list for JSON serialization
-                        if isinstance(download_progress['completed_layers'], set):
-                            download_progress['completed_layers'] = list(download_progress['completed_layers'])
-
                         logger.info(f"Successfully downloaded model: {model_id}")
+                        logger.info(f"Final download output: {' '.join(output_buffer[-5:])}")
 
                         # Brief wait for model to become available
                         time.sleep(3)
 
-                        # Clear the download state after successful completion
-                        download_progress.update({
-                            'downloading': False,
-                            'status': 'Model ready',
-                            'progress': 100
-                        })
-
                         # Verify model availability
                         if is_model_available(model_id):
+                            download_progress['status'] = 'Model ready'
                             logger.info(f"Model {model_id} is now available and ready")
                         else:
                             logger.warning(f"Model {model_id} download completed but not yet available")
-                            # Give it a bit more time
                             time.sleep(2)
                             if is_model_available(model_id):
+                                download_progress['status'] = 'Model ready'
                                 logger.info(f"Model {model_id} is now available after additional wait")
                     else:
+                        error_output = ' '.join(output_buffer[-10:]) if output_buffer else 'Unknown error'
                         download_progress.update({
                             'downloading': False,
-                            'status': f'Download failed with exit code {exit_code}',
+                            'status': f'Download failed: {error_output[:100]}',
                             'progress': 0
                         })
                         logger.error(f"Failed to download model: {model_id}, exit code: {exit_code}")
+                        logger.error(f"Error output: {error_output}")
 
                 except subprocess.TimeoutExpired:
                     process.kill()
                     download_progress.update({
                         'downloading': False,
-                        'status': 'Download timeout after 5 minutes of no activity',
+                        'status': 'Download timeout after 10 minutes',
                         'progress': 0
                     })
                     logger.error(f"Download process timeout: {model_id}")

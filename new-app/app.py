@@ -15,8 +15,9 @@ import hashlib
 from datetime import datetime
 from pathlib import Path
 from werkzeug.utils import secure_filename
-from flask import Flask, render_template, request, jsonify, send_from_directory, redirect
+from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for
 from dotenv import load_dotenv
+from terraform.integration.aws_sandbox_api import terraform_bp, init_app as init_terraform
 
 # Load environment variables
 load_dotenv()
@@ -188,6 +189,9 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 
 # Ensure upload directory exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Initialize terraform module - this will register the blueprint internally
+init_terraform(app)
 
 # Security: Validate secret key
 secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key')
@@ -476,36 +480,8 @@ def index():
 
 @app.route('/terraform')
 def terraform():
-    """Terraform tools page."""
-    return '''<!DOCTYPE html>
-<html>
-<head>
-    <title>Terraform Tools</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="font-family: system-ui, -apple-system, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto;">
-    <h1 style="color: #172b4d;">Terraform Tools</h1>
-    <p style="color: #5e6c84;">Your Terraform workspace and infrastructure tools</p>
-    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-        <h2>Welcome to Terraform Tools</h2>
-        <p>Access Terraform documentation and resources.</p>
-    </div>
-    <div style="display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
-        <div style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-            <h3>Terraform Documentation</h3>
-            <a href="https://developer.hashicorp.com/terraform" target="_blank">Visit Documentation →</a>
-        </div>
-        <div style="background: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-            <h3>AWS Provider</h3>
-            <a href="https://registry.terraform.io/providers/hashicorp/aws/latest/docs" target="_blank">View Provider Docs →</a>
-        </div>
-    </div>
-    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd;">
-        <a href="/" style="color: #5D4FE0; text-decoration: none;">← Back to LLM Assistant</a>
-    </div>
-</body>
-</html>'''
+    """Redirect to Terraform sandbox page."""
+    return redirect(url_for('terraform.sandbox_home'))
 
 @app.route('/static/<path:path>')
 def serve_static(path):

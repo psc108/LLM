@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <h1>Terraform Sandbox</h1>
+            <p class="lead">Use this sandbox environment to experiment with Terraform configurations for AWS.</p>
+
+            <div class="alert alert-info alert-dismissible fade show" role="alert">
+                <strong>Note:</strong> This sandbox requires Terraform CLI to be installed on your system.
+                If you encounter errors, please check the <a href="/terraform/README.md" class="alert-link">setup instructions</a>.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Create Workspace</h5>
+                </div>
+                <div class="card-body">
+                    <p>Create a new Terraform workspace to manage your resources.</p>
+                    <button id="createWorkspaceBtn" class="btn btn-primary">Create Workspace</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Workspaces</h5>
+                </div>
+                <div class="card-body">
+                    <div id="workspacesList">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p>Loading workspaces...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Workspace Creation Modal -->
+<div class="modal fade" id="createWorkspaceModal" tabindex="-1" aria-labelledby="createWorkspaceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="createWorkspaceModalLabel">Create Terraform Workspace</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createWorkspaceForm">
+                    <div class="mb-3">
+                        <label for="projectName" class="form-label">Project Name</label>
+                        <input type="text" class="form-control" id="projectName" value="terraform-sandbox">
+                    </div>
+                    <div class="mb-3">
+                        <label for="environment" class="form-label">Environment</label>
+                        <select class="form-select" id="environment">
+                            <option value="dev" selected>Development</option>
+                            <option value="staging">Staging</option>
+                            <option value="prod">Production</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="region" class="form-label">AWS Region</label>
+                        <select class="form-select" id="region">
+                            <option value="us-east-1" selected>US East (N. Virginia)</option>
+                            <option value="us-east-2">US East (Ohio)</option>
+                            <option value="us-west-1">US West (N. California)</option>
+                            <option value="us-west-2">US West (Oregon)</option>
+                            <option value="eu-west-1">EU (Ireland)</option>
+                            <option value="eu-central-1">EU (Frankfurt)</option>
+                            <option value="ap-northeast-1">Asia Pacific (Tokyo)</option>
+                            <option value="ap-southeast-1">Asia Pacific (Singapore)</option>
+                        </select>
+                    </div>
+
+                    <h5 class="mt-4">Resource Categories</h5>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="enableCompute" checked>
+                                <label class="form-check-label" for="enableCompute">Compute Resources</label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="enableStorage" checked>
+                                <label class="form-check-label" for="enableStorage">Storage Resources</label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="enableDatabase" checked>
+                                <label class="form-check-label" for="enableDatabase">Database Resources</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="enableServerless" checked>
+                                <label class="form-check-label" for="enableServerless">Serverless Resources</label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="enableNetworking" checked>
+                                <label class="form-check-label" for="enableNetworking">Networking Resources</label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="enableSecurity" checked>
+                                <label class="form-check-label" for="enableSecurity">Security Resources</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="enableContainer" checked>
+                                <label class="form-check-label" for="enableContainer">Container Resources</label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="enableMonitoring" checked>
+                                <label class="form-check-label" for="enableMonitoring">Monitoring Resources</label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="enableAIML" checked>
+                                <label class="form-check-label" for="enableAIML">AI/ML Resources</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submitCreateWorkspace">Create Workspace</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load workspaces
+        loadWorkspaces();
+
+        // Workspace creation button
+        document.getElementById('createWorkspaceBtn').addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('createWorkspaceModal'));
+            modal.show();
+        });
+
+        // Submit workspace creation
+        document.getElementById('submitCreateWorkspace').addEventListener('click', function() {
+            createWorkspace();
+        });
+    });
+
+    function loadWorkspaces() {
+        fetch('/terraform/workspaces')
+            .then(response => response.json())
+            .then(data => {
+                const workspacesList = document.getElementById('workspacesList');
+                if (data.success && data.workspaces.length > 0) {
+                    let html = '<div class="table-responsive"><table class="table table-striped">'
+                        + '<thead><tr><th>Workspace</th><th>Project</th><th>Environment</th><th>Status</th><th>Actions</th></tr></thead>'
+                        + '<tbody>';
+
+                    data.workspaces.forEach(workspace => {
+                        html += `<tr>
+                            <td>${workspace.workspace_id}</td>
+                            <td>${workspace.config.project_name || '-'}</td>
+                            <td>${workspace.config.environment || '-'}</td>
+                            <td><span class="badge bg-${workspace.status === 'applied' ? 'success' : 'warning'}">${workspace.status}</span></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary" onclick="viewWorkspace('${workspace.workspace_id}')">View</button>
+                                    <button class="btn btn-outline-success" onclick="planWorkspace('${workspace.workspace_id}')">Plan</button>
+                                    <button class="btn btn-outline-danger" onclick="destroyWorkspace('${workspace.workspace_id}')">Destroy</button>
+                                </div>
+                            </td>
+                        </tr>`;
+                    });
+
+                    html += '</tbody></table></div>';
+                    workspacesList.innerHTML = html;
+                } else {
+                    workspacesList.innerHTML = '<div class="alert alert-info">No workspaces found. Create a workspace to start using Terraform.</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading workspaces:', error);
+                document.getElementById('workspacesList').innerHTML = 
+                    '<div class="alert alert-danger">Error loading workspaces. Please try again later.</div>';
+            });
+    }
+
+    function createWorkspace() {
+        // Get form values
+        const data = {
+            project_name: document.getElementById('projectName').value,
+            environment: document.getElementById('environment').value,
+            region: document.getElementById('region').value,
+            enable_compute_examples: document.getElementById('enableCompute').checked,
+            enable_storage_examples: document.getElementById('enableStorage').checked,
+            enable_database_examples: document.getElementById('enableDatabase').checked,
+            enable_serverless_examples: document.getElementById('enableServerless').checked,
+            enable_networking_examples: document.getElementById('enableNetworking').checked,
+            enable_security_examples: document.getElementById('enableSecurity').checked,
+            enable_container_examples: document.getElementById('enableContainer').checked,
+            enable_monitoring_examples: document.getElementById('enableMonitoring').checked,
+            enable_aiml_examples: document.getElementById('enableAIML').checked
+        };
+
+        fetch('/terraform/workspaces', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Close modal and reload workspaces
+                const modal = bootstrap.Modal.getInstance(document.getElementById('createWorkspaceModal'));
+                modal.hide();
+                loadWorkspaces();
+
+                // Show success message
+                alert('Workspace created successfully!');
+            } else {
+                alert('Error creating workspace: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error creating workspace:', error);
+            alert('Error creating workspace. Please try again later.');
+        });
+    }
+
+    function viewWorkspace(workspaceId) {
+        // Redirect to workspace details page
+        window.location.href = `/terraform/workspaces/${workspaceId}`;
+    }
+
+    function planWorkspace(workspaceId) {
+        if (confirm(`Run Terraform plan for workspace ${workspaceId}?`)) {
+            fetch(`/terraform/workspaces/${workspaceId}/plan`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Plan complete for workspace ${workspaceId}\n\nPlan Status: ${data.plan_status}`);
+                    // Reload to show updated status
+                    loadWorkspaces();
+                } else {
+                    alert('Error planning workspace: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error planning workspace:', error);
+                alert('Error planning workspace. Please try again later.');
+            });
+        }
+    }
+
+    function destroyWorkspace(workspaceId) {
+        if (confirm(`Are you sure you want to destroy all resources in workspace ${workspaceId}?\n\nThis action cannot be undone!`)) {
+            fetch(`/terraform/workspaces/${workspaceId}/destroy`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Resources destroyed successfully for workspace ${workspaceId}`);
+                    // Reload to show updated status
+                    loadWorkspaces();
+                } else {
+                    alert('Error destroying resources: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error destroying workspace:', error);
+                alert('Error destroying workspace. Please try again later.');
+            });
+        }
+    }
+</script>
+{% endblock %}

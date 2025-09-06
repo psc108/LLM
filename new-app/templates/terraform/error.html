@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Terraform Setup Required{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-danger mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Terraform Setup Required</h4>
+                </div>
+                <div class="card-body">
+                    <h5>Terraform CLI is not installed</h5>
+                    <p>The Terraform sandbox requires the Terraform CLI to be installed on your system. Please follow the instructions below to install it:</p>
+
+                    <div class="alert alert-info">
+                        <h6>Installation Instructions:</h6>
+                        <p>Choose the instructions based on your operating system:</p>
+
+                        <div class="mt-3">
+                            <h6>Linux:</h6>
+                            <pre class="bg-dark text-light p-3">wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt update && sudo apt install terraform</pre>
+                        </div>
+
+                        <div class="mt-3">
+                            <h6>macOS (with Homebrew):</h6>
+                            <pre class="bg-dark text-light p-3">brew tap hashicorp/tap
+brew install hashicorp/tap/terraform</pre>
+                        </div>
+
+                        <div class="mt-3">
+                            <h6>Windows (with Chocolatey):</h6>
+                            <pre class="bg-dark text-light p-3">choco install terraform</pre>
+                        </div>
+                    </div>
+
+                    <p>After installation, verify by running <code>terraform --version</code> in your terminal.</p>
+                    <p>Once Terraform is installed, refresh this page to continue using the Terraform sandbox.</p>
+
+                    <div class="mt-4">
+                        <a href="/terraform" class="btn btn-primary">Refresh and Try Again</a>
+                        <a href="https://learn.hashicorp.com/tutorials/terraform/install-cli" target="_blank" class="btn btn-outline-secondary ms-2">Official Installation Guide</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

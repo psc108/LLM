@@ -1,5 +1,172 @@
 # AWS Terraform Sandbox Module Variables
+# Variables for AWS sandbox module
 
+variable "project_name" {
+  description = "Project name to use in resource naming"
+  type        = string
+  default     = "terraform-sandbox"
+}
+
+variable "environment" {
+  description = "Environment name (e.g. dev, staging, prod)"
+  type        = string
+  default     = "dev"
+}
+
+variable "region" {
+  description = "AWS region to deploy resources"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "vpc_cidr" {
+  description = "CIDR block for the VPC"
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
+variable "create_nat_gateway" {
+  description = "Create NAT Gateway for private subnets (incurs costs)"
+  type        = bool
+  default     = false
+}
+
+variable "enable_vpc_flow_logs" {
+  description = "Enable VPC Flow Logs to CloudWatch"
+  type        = bool
+  default     = true
+}
+
+# Compute Options
+variable "enable_compute_examples" {
+  description = "Enable compute resource examples"
+  type        = bool
+  default     = true
+}
+
+variable "create_bastion" {
+  description = "Create a bastion host in a public subnet"
+  type        = bool
+  default     = true
+}
+
+variable "create_ec2_examples" {
+  description = "Create EC2 instance examples"
+  type        = bool
+  default     = true
+}
+
+# Database Options
+variable "enable_database_examples" {
+  description = "Enable database resource examples"
+  type        = bool
+  default     = true
+}
+
+variable "create_rds_examples" {
+  description = "Create RDS instance examples"
+  type        = bool
+  default     = true
+}
+
+variable "create_dynamodb_examples" {
+  description = "Create DynamoDB examples"
+  type        = bool
+  default     = true
+}
+
+# Storage Options
+variable "enable_storage_examples" {
+  description = "Enable storage resource examples"
+  type        = bool
+  default     = true
+}
+
+variable "create_s3_examples" {
+  description = "Create S3 bucket examples"
+  type        = bool
+  default     = true
+}
+
+variable "create_efs_examples" {
+  description = "Create EFS examples"
+  type        = bool
+  default     = true
+}
+
+# Serverless Options
+variable "enable_serverless_examples" {
+  description = "Enable serverless resource examples"
+  type        = bool
+  default     = true
+}
+
+variable "create_lambda_examples" {
+  description = "Create Lambda function examples"
+  type        = bool
+  default     = true
+}
+
+variable "create_apigateway_examples" {
+  description = "Create API Gateway examples"
+  type        = bool
+  default     = true
+}
+
+variable "create_stepfunctions_examples" {
+  description = "Create Step Functions examples"
+  type        = bool
+  default     = true
+}
+
+# Security Options
+variable "enable_security_examples" {
+  description = "Enable security resource examples"
+  type        = bool
+  default     = true
+}
+
+# Networking Options
+variable "enable_networking_examples" {
+  description = "Enable networking resource examples"
+  type        = bool
+  default     = true
+}
+
+# Container Options
+variable "enable_container_examples" {
+  description = "Enable container resource examples"
+  type        = bool
+  default     = true
+}
+
+# Monitoring Options
+variable "enable_monitoring_examples" {
+  description = "Enable monitoring resource examples"
+  type        = bool
+  default     = true
+}
+
+# AI/ML Options
+variable "enable_aiml_examples" {
+  description = "Enable AI/ML resource examples"
+  type        = bool
+  default     = true
+}
+
+# DevOps Options
+variable "enable_devops_examples" {
+  description = "Enable DevOps resource examples"
+  type        = bool
+  default     = true
+}
+
+# Tags
+variable "default_tags" {
+  description = "Default tags to apply to all resources"
+  type        = map(string)
+  default     = {}
+}
 # General settings
 variable "region" {
   description = "AWS region to deploy resources"

@@ -1,5 +1,5 @@
 flask==2.3.3
-requests==2.31.0
+requests==2.32.4
 psutil==5.9.5
 python-dotenv==1.0.0
 Werkzeug==2.3.7

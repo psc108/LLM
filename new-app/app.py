@@ -186,6 +186,7 @@ class FileChangeTracker:
 # Create Flask app
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Ensure upload directory exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -491,7 +492,11 @@ def serve_static(path):
 @app.route('/api/download-progress', methods=['GET'])
 def get_download_progress():
     """Get current download progress"""
-    return jsonify(download_progress)
+    # Convert set to list for JSON serialization
+    progress_copy = download_progress.copy()
+    if isinstance(progress_copy.get('completed_layers'), set):
+        progress_copy['completed_layers'] = list(progress_copy['completed_layers'])
+    return jsonify(progress_copy)
 
 @app.route('/api/upload-project', methods=['POST'])
 def upload_project():
@@ -635,16 +640,38 @@ def upload_project():
 def get_project_files(session_id):
     """Get list of files in uploaded project"""
     try:
-        session_dir = os.path.join(UPLOAD_FOLDER, session_id)
-        if not os.path.exists(session_dir):
-            return jsonify({'success': False, 'error': 'Session not found'}), 404
-
-        # Check for extracted directory first
-        project_dir = os.path.join(session_dir, 'extracted')
-        if not os.path.exists(project_dir):
-            project_dir = os.path.join(session_dir, 'project')
-        if not os.path.exists(project_dir):
+        # Check if it's a terraform workspace first
+        terraform_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'terraform', 'terraform')
+        terraform_workspace_dir = os.path.join(terraform_dir, 'workspaces', session_id)
+        logger.info(f"Checking terraform workspace path: {terraform_workspace_dir}")
+        
+        if os.path.exists(terraform_workspace_dir):
+            project_dir = terraform_workspace_dir
+            logger.info(f"Using terraform workspace directory: {project_dir}")
+        else:
+            session_dir = os.path.join(UPLOAD_FOLDER, session_id)
+            if not os.path.exists(session_dir):
+                logger.error(f"Session directory not found: {session_dir}")
+                return jsonify({'success': False, 'error': 'Session not found'}), 404
             project_dir = session_dir
+            logger.info(f"Using upload session directory: {project_dir}")
+
+            # Check if this is a local project
+            project_info_file = os.path.join(session_dir, 'project_info.json')
+            if os.path.exists(project_info_file):
+                with open(project_info_file, 'r') as f:
+                    project_info = json.load(f)
+                if project_info.get('type') == 'local_project':
+                    project_dir = project_info['original_path']
+                else:
+                    project_dir = session_dir
+            else:
+                # Check for extracted directory first
+                project_dir = os.path.join(session_dir, 'extracted')
+                if not os.path.exists(project_dir):
+                    project_dir = os.path.join(session_dir, 'project')
+                if not os.path.exists(project_dir):
+                    project_dir = session_dir
 
         analysis = analyze_project_structure(project_dir)
 
@@ -664,16 +691,22 @@ def get_project_files(session_id):
 def get_file_content(session_id, file_path):
     """Get content of a specific file"""
     try:
-        session_dir = os.path.join(UPLOAD_FOLDER, session_id)
-        if not os.path.exists(session_dir):
-            return jsonify({'success': False, 'error': 'Session not found'}), 404
-
-        # Check for extracted directory first
-        project_dir = os.path.join(session_dir, 'extracted')
-        if not os.path.exists(project_dir):
-            project_dir = os.path.join(session_dir, 'project')
-        if not os.path.exists(project_dir):
-            project_dir = session_dir
+        # Check if it's a terraform workspace first
+        terraform_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'terraform', 'terraform')
+        terraform_workspace_dir = os.path.join(terraform_dir, 'workspaces', session_id)
+        if os.path.exists(terraform_workspace_dir):
+            project_dir = terraform_workspace_dir
+        else:
+            session_dir = os.path.join(UPLOAD_FOLDER, session_id)
+            if not os.path.exists(session_dir):
+                return jsonify({'success': False, 'error': 'Session not found'}), 404
+            
+            # Check for extracted directory first
+            project_dir = os.path.join(session_dir, 'extracted')
+            if not os.path.exists(project_dir):
+                project_dir = os.path.join(session_dir, 'project')
+            if not os.path.exists(project_dir):
+                project_dir = session_dir
 
         full_file_path = os.path.join(project_dir, file_path)
 
@@ -1618,7 +1651,8 @@ def download_model():
                     ["ollama", "pull", model_id],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
-                    universal_newlines=True,
+                    text=True,
+                    encoding='utf-8',
                     bufsize=1
                 )
 
@@ -1752,6 +1786,208 @@ def reset_download_state():
             'error': str(e)
         })
 
+@app.route('/api/browse-local-projects', methods=['GET'])
+def browse_local_projects():
+    """Browse for local projects in common directories"""
+    try:
+        projects = []
+        
+        # Common project directories to search
+        search_dirs = [
+            os.path.expanduser('~/Documents'),
+            os.path.expanduser('~/Projects'),
+            os.path.expanduser('~/Development'),
+            os.path.expanduser('~/Code'),
+            'C:\\Users\\' + os.getenv('USERNAME', '') + '\\Documents',
+            'C:\\Users\\' + os.getenv('USERNAME', '') + '\\Projects',
+            'C:\\Projects',
+            'C:\\Code'
+        ]
+        
+        for search_dir in search_dirs:
+            if os.path.exists(search_dir):
+                try:
+                    for item in os.listdir(search_dir):
+                        item_path = os.path.join(search_dir, item)
+                        if os.path.isdir(item_path):
+                            # Check if it looks like a project
+                            project_type = detect_project_type(item_path)
+                            if project_type:
+                                file_count = count_files(item_path)
+                                projects.append({
+                                    'name': item,
+                                    'path': item_path,
+                                    'type': project_type,
+                                    'file_count': file_count
+                                })
+                except PermissionError:
+                    continue
+        
+        # Sort by name
+        projects.sort(key=lambda x: x['name'].lower())
+        
+        return jsonify({
+            'success': True,
+            'projects': projects[:20]  # Limit to 20 projects
+        })
+        
+    except Exception as e:
+        logger.error(f"Error browsing local projects: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/browse-directory', methods=['POST'])
+def browse_directory():
+    """Browse a specific directory"""
+    try:
+        data = request.get_json()
+        path = data.get('path', '')
+        
+        # Default to user home if no path provided
+        if not path:
+            path = os.path.expanduser('~')
+        
+        # Security check - ensure path exists and is accessible
+        if not os.path.exists(path) or not os.path.isdir(path):
+            return jsonify({'success': False, 'error': 'Directory not found'}), 404
+        
+        items = []
+        try:
+            # Add parent directory option (except for root)
+            parent = os.path.dirname(path)
+            if parent != path:  # Not at root
+                items.append({
+                    'name': '..',
+                    'path': parent,
+                    'type': 'parent',
+                    'is_directory': True
+                })
+            
+            # List directory contents
+            for item in sorted(os.listdir(path)):
+                if item.startswith('.') and item not in ['.git', '.vscode', '.idea']:
+                    continue  # Skip hidden files except important ones
+                    
+                item_path = os.path.join(path, item)
+                is_dir = os.path.isdir(item_path)
+                
+                item_info = {
+                    'name': item,
+                    'path': item_path,
+                    'is_directory': is_dir,
+                    'type': 'directory' if is_dir else 'file'
+                }
+                
+                # Add project type for directories
+                if is_dir:
+                    project_type = detect_project_type(item_path)
+                    if project_type:
+                        item_info['project_type'] = project_type
+                        item_info['file_count'] = count_files(item_path)
+                
+                items.append(item_info)
+                
+        except PermissionError:
+            return jsonify({'success': False, 'error': 'Permission denied'}), 403
+        
+        return jsonify({
+            'success': True,
+            'current_path': path,
+            'items': items
+        })
+        
+    except Exception as e:
+        logger.error(f"Error browsing directory: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/load-local-project', methods=['POST'])
+def load_local_project():
+    """Load a local project from disk"""
+    try:
+        data = request.get_json()
+        project_path = data.get('project_path')
+        
+        if not project_path or not os.path.exists(project_path):
+            return jsonify({'success': False, 'error': 'Invalid project path'}), 400
+        
+        # Security check - ensure path is absolute and exists
+        project_path = os.path.abspath(project_path)
+        if not os.path.isdir(project_path):
+            return jsonify({'success': False, 'error': 'Path is not a directory'}), 400
+        
+        # Create session for this local project
+        session_id = f"local-{int(time.time())}"
+        
+        # Initialize file change tracking
+        initialize_project_tracking(session_id, project_path)
+        
+        # Analyze the project
+        analysis = analyze_project_structure(project_path)
+        
+        # Store reference to local project path
+        session_dir = os.path.join(UPLOAD_FOLDER, session_id)
+        os.makedirs(session_dir, exist_ok=True)
+        
+        # Store project info
+        project_info = {
+            'type': 'local_project',
+            'original_path': project_path,
+            'session_id': session_id,
+            'analysis': analysis
+        }
+        
+        with open(os.path.join(session_dir, 'project_info.json'), 'w') as f:
+            json.dump(project_info, f, indent=2)
+        
+        logger.info(f"Loaded local project: {project_path} as session {session_id}")
+        
+        return jsonify({
+            'success': True,
+            'session_id': session_id,
+            'analysis': analysis,
+            'project_path': project_path
+        })
+        
+    except Exception as e:
+        logger.error(f"Error loading local project: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+def detect_project_type(path):
+    """Detect if a directory contains a recognizable project type"""
+    try:
+        files = os.listdir(path)
+        
+        # Check for common project indicators
+        if any(f.endswith('.tf') for f in files):
+            return 'Terraform'
+        if 'package.json' in files:
+            return 'Node.js'
+        if 'requirements.txt' in files or 'setup.py' in files:
+            return 'Python'
+        if 'pom.xml' in files or any(f.endswith('.java') for f in files):
+            return 'Java'
+        if 'Dockerfile' in files:
+            return 'Docker'
+        if any(f.endswith('.yml') or f.endswith('.yaml') for f in files):
+            return 'YAML/Config'
+        if '.git' in files:
+            return 'Git Repository'
+        
+        return None
+    except:
+        return None
+
+def count_files(path, max_count=1000):
+    """Count files in directory (with limit)"""
+    try:
+        count = 0
+        for root, dirs, files in os.walk(path):
+            count += len(files)
+            if count > max_count:
+                return f"{max_count}+"
+        return count
+    except:
+        return 0
+
 @app.route('/api/debug-status')
 def debug_status():
     """Debug endpoint to see detailed status information"""
@@ -1772,6 +2008,15 @@ def debug_status():
         return jsonify(debug_info)
     except Exception as e:
         return jsonify({'error': str(e)})
+
+@app.route('/file-browser')
+def file_browser():
+    """File browser page for viewing uploaded project files"""
+    session_id = request.args.get('session')
+    if not session_id:
+        return "Session ID required", 400
+    
+    return render_template('file_browser.html', session_id=session_id)
 
 @app.route('/test')
 def test_route():

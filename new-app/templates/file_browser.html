@@ -135,6 +135,78 @@
             flex-direction: column;
         }
 
+        .chat-panel {
+            width: 400px;
+            background-color: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: width 0.3s;
+        }
+
+        .chat-panel.collapsed {
+            width: 0;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-tertiary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            max-height: 400px;
+        }
+
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .chat-message.user {
+            background-color: var(--accent-color);
+            color: white;
+            margin-left: 20px;
+        }
+
+        .chat-message.assistant {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            margin-right: 20px;
+        }
+
+        .chat-input-area {
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .chat-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            resize: vertical;
+            min-height: 60px;
+            font-family: inherit;
+        }
+
+        .chat-send-btn {
+            margin-top: 10px;
+            width: 100%;
+        }
+
         .editor-header {
             background-color: var(--bg-secondary);
             border-bottom: 1px solid var(--border-color);
@@ -193,6 +265,25 @@
         }
 
         .editor-content {
+            flex: 1;
+            position: relative;
+            display: flex;
+        }
+
+        .line-numbers {
+            background-color: var(--bg-tertiary);
+            color: var(--text-muted);
+            padding: 20px 10px;
+            font-family: 'Courier New', Consolas, Monaco, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            text-align: right;
+            user-select: none;
+            border-right: 1px solid var(--border-color);
+            min-width: 50px;
+        }
+
+        .code-editor-wrapper {
             flex: 1;
             position: relative;
         }
@@ -327,6 +418,9 @@
                 <button class="btn btn-secondary" id="refresh-btn" onclick="refreshFileTree()" title="Refresh">
                     <i class="fas fa-sync-alt"></i>
                 </button>
+                <button class="btn btn-secondary" id="chat-toggle-btn" onclick="toggleChat()" title="AI Chat">
+                    <i class="fas fa-comments"></i>
+                </button>
                 <button class="btn btn-primary" id="save-btn" onclick="saveCurrentFile()" disabled title="Save File">
                     <i class="fas fa-save"></i> Save
                 </button>
@@ -339,12 +433,15 @@
                 <h3>File Editor</h3>
                 <p>Select a file from the tree to start editing</p>
             </div>
-            <textarea
-                    class="code-editor"
-                    id="code-editor"
-                    placeholder="Select a file to edit..."
-                    style="display: none;"
-            ></textarea>
+            <div class="line-numbers" id="line-numbers" style="display: none;"></div>
+            <div class="code-editor-wrapper">
+                <textarea
+                        class="code-editor"
+                        id="code-editor"
+                        placeholder="Select a file to edit..."
+                        style="display: none;"
+                ></textarea>
+            </div>
         </div>
 
         <div class="status-bar">
@@ -356,6 +453,27 @@
             <div class="save-status" id="save-status">Ready</div>
         </div>
     </div>
+
+    <!-- AI Chat Panel -->
+    <div class="chat-panel collapsed" id="chat-panel">
+        <div class="chat-header">
+            <h6>AI Assistant</h6>
+            <button class="btn btn-sm btn-secondary" onclick="toggleChat()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="chat-message assistant">
+                <strong>AI Assistant:</strong> Hi! I can help you understand and improve the code you're viewing. Ask me anything about the current file!
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <textarea class="chat-input" id="chat-input" placeholder="Ask about this file..."></textarea>
+            <button class="btn btn-primary chat-send-btn" onclick="sendChatMessage()">
+                <i class="fas fa-paper-plane"></i> Send
+            </button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -364,6 +482,7 @@
     let fileContent = '';
     let isModified = false;
     let projectStructure = null;
+    let sessionId = null;
 
     // Initialize the file browser
     function initializeFileBrowser(sessionId) {
@@ -626,12 +745,30 @@
     function showEditor() {
         document.getElementById('editor-welcome').style.display = 'none';
         document.getElementById('code-editor').style.display = 'block';
+        document.getElementById('line-numbers').style.display = 'block';
         document.getElementById('save-btn').disabled = false;
+        updateLineNumbers();
+    }
+
+    function updateLineNumbers() {
+        const editor = document.getElementById('code-editor');
+        const lineNumbers = document.getElementById('line-numbers');
+        const lines = editor.value.split('\n');
+        
+        let lineNumbersHtml = '';
+        for (let i = 1; i <= lines.length; i++) {
+            lineNumbersHtml += `<div>${i}</div>`;
+        }
+        lineNumbers.innerHTML = lineNumbersHtml;
+        
+        // Sync scroll
+        lineNumbers.scrollTop = editor.scrollTop;
     }
 
     function showWelcomeScreen() {
         document.getElementById('editor-welcome').style.display = 'flex';
         document.getElementById('code-editor').style.display = 'none';
+        document.getElementById('line-numbers').style.display = 'none';
         document.getElementById('current-file-path').textContent = 'No file selected';
         document.getElementById('save-btn').disabled = true;
         currentFile = null;
@@ -699,6 +836,11 @@
     document.getElementById('code-editor').addEventListener('input', function() {
         const currentContent = this.value;
         setModified(currentContent !== fileContent);
+        updateLineNumbers();
+    });
+
+    document.getElementById('code-editor').addEventListener('scroll', function() {
+        document.getElementById('line-numbers').scrollTop = this.scrollTop;
     });
 
     // Track cursor position
@@ -742,10 +884,159 @@
 
     // Get session from URL parameters
     const urlParams = new URLSearchParams(window.location.search);
-    const sessionId = urlParams.get('session');
+    sessionId = urlParams.get('session');
+    const autoOpenFile = urlParams.get('file');
+    
     if (sessionId) {
         initializeFileBrowser(sessionId);
+        
+        // Auto-open specified file after a short delay
+        if (autoOpenFile) {
+            setTimeout(() => {
+                autoSelectFile(autoOpenFile);
+                // Also open the AI chat panel
+                setTimeout(() => {
+                    const chatPanel = document.getElementById('chat-panel');
+                    chatPanel.classList.remove('collapsed');
+                }, 500);
+            }, 1000);
+        }
     }
+    
+    function autoSelectFile(fileName) {
+        // Find and click the file in the tree
+        const fileElements = document.querySelectorAll('.file-item');
+        for (const fileEl of fileElements) {
+            const fileText = fileEl.querySelector('span:last-child');
+            if (fileText && fileText.textContent === fileName) {
+                fileEl.click();
+                break;
+            }
+        }
+    }
+
+    // Chat functionality
+    function toggleChat() {
+        const chatPanel = document.getElementById('chat-panel');
+        chatPanel.classList.toggle('collapsed');
+    }
+
+    async function createFileFromAI(fileName, content) {
+        try {
+            console.log('Creating file:', fileName, 'with content length:', content.length);
+            const response = await fetch(`/terraform/workspaces/${sessionId}/create-file`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    file_path: fileName,
+                    content: content
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                addChatMessage(`✅ Created file: ${fileName}`, 'assistant');
+                // Refresh file tree to show new file
+                setTimeout(() => refreshFileTree(), 500);
+            } else {
+                addChatMessage(`❌ Failed to create ${fileName}: ${result.error}`, 'assistant');
+            }
+        } catch (error) {
+            addChatMessage(`❌ Error creating ${fileName}: ${error.message}`, 'assistant');
+        }
+    }
+
+    async function sendChatMessage() {
+        const input = document.getElementById('chat-input');
+        const message = input.value.trim();
+        
+        if (!message) return;
+        
+        // Add user message
+        addChatMessage(message, 'user');
+        input.value = '';
+        
+        // Get current file content for context
+        const fileContent = document.getElementById('code-editor').value || '';
+        const contextMessage = `Current file: ${currentFile || 'No file selected'}\n\nFile content:\n${fileContent}\n\nUser question: ${message}\n\nNote: You can create files by using [CREATE_FILE:filename.ext]file content here[/CREATE_FILE] tags in your response.`;
+        
+        // Add loading message
+        addChatMessage('Thinking...', 'assistant');
+        
+        try {
+            console.log('Sending chat request:', { message: contextMessage, session: sessionId });
+            
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    message: contextMessage,
+                    project_session: sessionId
+                })
+            });
+            
+            console.log('Chat response status:', response.status);
+            const result = await response.json();
+            console.log('Chat result:', result);
+            
+            // Remove loading message
+            const messages = document.getElementById('chat-messages');
+            messages.removeChild(messages.lastChild);
+            
+            if (result.success) {
+                // Check if AI wants to create files
+                const response = result.response;
+                const fileMatches = response.match(/\[CREATE_FILE:(.*?)\]([\s\S]*?)\[\/CREATE_FILE\]/g);
+                
+                if (fileMatches) {
+                    // Process file creation requests
+                    for (const match of fileMatches) {
+                        const fileMatch = match.match(/\[CREATE_FILE:(.*?)\]([\s\S]*?)\[\/CREATE_FILE\]/);
+                        if (fileMatch) {
+                            const fileName = fileMatch[1].trim();
+                            const fileContent = fileMatch[2].trim();
+                            await createFileFromAI(fileName, fileContent);
+                        }
+                    }
+                    
+                    // Remove file creation tags from display
+                    const cleanResponse = response.replace(/\[CREATE_FILE:.*?\][\s\S]*?\[\/CREATE_FILE\]/g, '');
+                    addChatMessage(cleanResponse, 'assistant');
+                } else {
+                    addChatMessage(response, 'assistant');
+                }
+            } else {
+                addChatMessage('Error: ' + result.error, 'assistant');
+            }
+        } catch (error) {
+            console.error('Chat error:', error);
+            // Remove loading message
+            const messages = document.getElementById('chat-messages');
+            messages.removeChild(messages.lastChild);
+            addChatMessage('Error: ' + error.message, 'assistant');
+        }
+    }
+
+    function addChatMessage(message, type) {
+        const messagesContainer = document.getElementById('chat-messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${type}`;
+        
+        const prefix = type === 'user' ? 'You:' : 'AI:';
+        messageDiv.innerHTML = `<strong>${prefix}</strong> ${message.replace(/\n/g, '<br>')}`;
+        
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // Enter key to send message
+    document.getElementById('chat-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendChatMessage();
+        }
+    });
 
     // Make function available globally for parent window
     window.initializeFileBrowser = initializeFileBrowser;

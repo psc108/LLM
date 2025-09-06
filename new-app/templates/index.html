@@ -77,9 +77,13 @@
                     <button onclick="triggerFolderUpload()" class="upload-btn folder-btn">
                         <i class="fa-solid fa-folder-plus"></i> Upload Project Folder
                     </button>
+                    <button onclick="browseLocalProjects()" class="upload-btn local-btn">
+                        <i class="fa-solid fa-folder-open"></i> Browse Local Projects
+                    </button>
                     <div class="upload-help">
                         <small>Files: Multiple files or ZIP archives<br>
-                            Folder: Complete VS Code/IntelliJ projects</small>
+                            Folder: Complete VS Code/IntelliJ projects<br>
+                            Local: Browse existing projects on disk</small>
                     </div>
                     <div id="upload-status" class="upload-status"></div>
                 </div>
@@ -258,6 +262,14 @@
 
     .folder-btn:hover {
         background: #6D28D9;
+    }
+
+    .local-btn {
+        background: #059669;
+    }
+
+    .local-btn:hover {
+        background: #047857;
     }
 
     .upload-help {
@@ -865,6 +877,213 @@ Upload a project to get started, then use the file browser to make some edits an
 
         // Also add a message to the chat
         addMessage('assistant', 'Opening file browser in a new window. You can now browse, view, and edit your project files with syntax highlighting and save functionality.');
+    }
+
+    async function browseLocalProjects() {
+        try {
+            const response = await fetch('/api/browse-local-projects');
+            const result = await response.json();
+            
+            if (result.success) {
+                showProjectSelector(result.projects);
+            } else {
+                alert('Error browsing local projects: ' + result.error);
+            }
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    }
+
+    function showProjectSelector(projects) {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 10000;
+            display: flex; justify-content: center; align-items: center;
+        `;
+        
+        const content = document.createElement('div');
+        content.style.cssText = `
+            background: white; padding: 20px; border-radius: 8px;
+            max-width: 600px; width: 90%; max-height: 70%; overflow-y: auto;
+        `;
+        
+        let html = '<h3>Select Local Project</h3>';
+        
+        html += '<div style="margin-bottom: 15px;">';
+        html += '<button onclick="browseFileSystem()" style="padding: 10px 20px; background: #5D4FE0; color: white; border: none; border-radius: 4px; cursor: pointer;">Browse File System</button>';
+        html += '</div>';
+        
+        if (projects.length === 0) {
+            html += '<p>No projects found in common directories. Use "Browse File System" to select any folder.</p>';
+        } else {
+            html += '<h4>Found Projects:</h4>';
+            html += '<div style="margin: 10px 0;">';
+            projects.forEach((project, index) => {
+                html += `
+                    <div style="padding: 10px; border: 1px solid #ddd; margin: 5px 0; border-radius: 4px; cursor: pointer;"
+                         onclick="selectLocalProject('${project.path.replace(/\\/g, '\\\\')}', '${project.name}')">
+                        <strong>${project.name}</strong><br>
+                        <small style="color: #666;">${project.path}</small><br>
+                        <small style="color: #999;">${project.type} • ${project.file_count} files</small>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        html += '<button onclick="closeProjectSelector()" style="margin-top: 15px; padding: 8px 16px;">Close</button>';
+        
+        window.browseFileSystem = () => {
+            closeProjectSelector();
+            showDirectoryBrowser();
+        };
+        
+        content.innerHTML = html;
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+        
+        window.closeProjectSelector = () => {
+            document.body.removeChild(modal);
+            delete window.closeProjectSelector;
+            delete window.selectLocalProject;
+        };
+        
+        window.selectLocalProject = async (projectPath, projectName) => {
+            closeProjectSelector();
+            await loadLocalProject(projectPath, projectName);
+        };
+    }
+
+    function showDirectoryBrowser(currentPath = '') {
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 10001;
+            display: flex; justify-content: center; align-items: center;
+        `;
+        
+        const content = document.createElement('div');
+        content.style.cssText = `
+            background: white; padding: 20px; border-radius: 8px;
+            max-width: 700px; width: 90%; max-height: 80%; overflow-y: auto;
+        `;
+        
+        content.innerHTML = '<h3>Browse Directories</h3><div id="directoryContent">Loading...</div>';
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+        
+        window.closeDirBrowser = () => {
+            document.body.removeChild(modal);
+            delete window.closeDirBrowser;
+            delete window.navigateToDir;
+            delete window.selectDirectory;
+        };
+        
+        window.navigateToDir = (path) => {
+            loadDirectoryContents(path);
+        };
+        
+        window.selectDirectory = async (path, name) => {
+            closeDirBrowser();
+            await loadLocalProject(path, name);
+        };
+        
+        async function loadDirectoryContents(path) {
+            try {
+                const response = await fetch('/api/browse-directory', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: path })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    let html = `<div style="margin-bottom: 15px;">`;
+                    html += `<strong>Current: </strong><code>${result.current_path}</code>`;
+                    html += `<button onclick="selectDirectory('${result.current_path.replace(/\\/g, '\\\\')}', '${result.current_path.split('\\').pop() || result.current_path.split('/').pop()}')" style="float: right; padding: 5px 10px; background: #059669; color: white; border: none; border-radius: 3px;">Select This Folder</button>`;
+                    html += `</div>`;
+                    
+                    html += '<div style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 10px;">';
+                    
+                    result.items.forEach(item => {
+                        if (item.is_directory) {
+                            const icon = item.type === 'parent' ? '↖️' : '📁';
+                            const projectInfo = item.project_type ? ` (${item.project_type})` : '';
+                            html += `
+                                <div style="padding: 8px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center;"
+                                     onclick="navigateToDir('${item.path.replace(/\\/g, '\\\\')}')">
+                                    <span>${icon} ${item.name}${projectInfo}</span>
+                                    ${item.project_type ? `<button onclick="event.stopPropagation(); selectDirectory('${item.path.replace(/\\/g, '\\\\')}', '${item.name}');" style="padding: 3px 8px; background: #5D4FE0; color: white; border: none; border-radius: 3px; font-size: 12px;">Select</button>` : ''}
+                                </div>
+                            `;
+                        }
+                    });
+                    
+                    html += '</div>';
+                    html += '<button onclick="closeDirBrowser()" style="margin-top: 15px; padding: 8px 16px;">Close</button>';
+                    
+                    document.getElementById('directoryContent').innerHTML = html;
+                } else {
+                    document.getElementById('directoryContent').innerHTML = `<p>Error: ${result.error}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('directoryContent').innerHTML = `<p>Error loading directory: ${error.message}</p>`;
+            }
+        }
+        
+        // Load initial directory
+        loadDirectoryContents(currentPath);
+        
+        // Add input element for manual path entry
+        html += '<div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">';
+        html += '<h4>Or enter path manually:</h4>';
+        html += '<input type="text" id="manualPath" placeholder="C:\\path\\to\\project" style="width: 70%; padding: 8px; margin-right: 10px;">';
+        html += '<button onclick="loadManualPath()" style="padding: 8px 16px;">Load</button>';
+        html += '</div>';
+        
+        window.loadManualPath = async () => {
+            const pathInput = document.getElementById('manualPath');
+            const projectPath = pathInput.value.trim();
+            if (projectPath) {
+                const projectName = projectPath.split('\\').pop() || projectPath.split('/').pop() || 'Project';
+                closeProjectSelector();
+                await loadLocalProject(projectPath, projectName);
+            }
+        };
+    }
+
+    async function loadLocalProject(projectPath, projectName) {
+        const uploadStatus = document.getElementById('upload-status');
+        uploadStatus.textContent = `Loading ${projectName}...`;
+        uploadStatus.style.color = '#5D4FE0';
+        
+        try {
+            const response = await fetch('/api/load-local-project', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ project_path: projectPath })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                currentProjectSession = result.session_id;
+                updateProjectInfo(result.analysis);
+                
+                uploadStatus.textContent = `✅ Loaded "${projectName}"`;
+                uploadStatus.style.color = '#00b300';
+                
+                addMessage('assistant', `Local project "${projectName}" loaded successfully! I can now analyze and help with your ${result.analysis.project_type.join(', ')} project with ${result.analysis.files.length} files.\n\nChange tracking is active - I'll monitor file modifications in real-time.`);
+            } else {
+                uploadStatus.textContent = `❌ Error: ${result.error}`;
+                uploadStatus.style.color = '#ff3300';
+            }
+        } catch (error) {
+            uploadStatus.textContent = `❌ Load failed: ${error.message}`;
+            uploadStatus.style.color = '#ff3300';
+        }
     }
 
     function formatFileTree(tree, indent = '') {

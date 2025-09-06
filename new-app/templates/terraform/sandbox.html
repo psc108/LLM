@@ -6,8 +6,15 @@
 <div class="container mt-5">
     <div class="row">
         <div class="col-12">
-            <h1>Terraform Sandbox</h1>
-            <p class="lead">Use this sandbox environment to experiment with Terraform configurations for AWS.</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1>Terraform Sandbox</h1>
+                    <p class="lead">Use this sandbox environment to experiment with Terraform configurations for AWS.</p>
+                </div>
+                <div class="text-end">
+                    <div id="ollamaStatus" class="badge bg-secondary">Checking AI...</div>
+                </div>
+            </div>
 
             <div class="alert alert-info alert-dismissible fade show" role="alert">
                 <strong>Note:</strong> This sandbox requires Terraform CLI to be installed on your system.
@@ -19,6 +26,19 @@
 
     <div class="row mt-4">
         <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Select Project</h5>
+                </div>
+                <div class="card-body">
+                    <p>Select an existing project to use with Terraform.</p>
+                    <button id="selectProjectBtn" class="btn btn-success mb-2 w-100">Select Project</button>
+                    <div id="selectedProject" class="alert alert-info d-none">
+                        <strong>Selected:</strong> <span id="selectedProjectName">None</span>
+                    </div>
+                </div>
+            </div>
+            
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">Create Workspace</h5>
@@ -50,6 +70,150 @@
     </div>
 </div>
 
+<!-- Project Selection Modal -->
+<div class="modal fade" id="selectProjectModal" tabindex="-1" aria-labelledby="selectProjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="selectProjectModalLabel">Select Project</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Uploaded Projects</h6>
+                        <div id="uploadedProjects" class="border rounded p-3" style="height: 300px; overflow-y: auto;">
+                            <div class="text-center text-muted">
+                                <div class="spinner-border spinner-border-sm" role="status"></div>
+                                <p class="mt-2">Loading projects...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Local Projects</h6>
+                        <div id="localProjects" class="border rounded p-3" style="height: 300px; overflow-y: auto;">
+                            <button class="btn btn-outline-primary btn-sm mb-2" onclick="browseLocalProjects()">Browse Local Directories</button>
+                            <button class="btn btn-outline-secondary btn-sm mb-2 ms-2" onclick="showDirectoryBrowser()">Browse Filesystem</button>
+                            <div id="localProjectsList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Directory Browser Modal -->
+<div class="modal fade" id="directoryBrowserModal" tabindex="-1" aria-labelledby="directoryBrowserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="directoryBrowserModalLabel">Browse Directory</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Current Path:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="currentPath" readonly>
+                        <button class="btn btn-outline-secondary" onclick="navigateToPath()">Go</button>
+                    </div>
+                </div>
+                <div id="directoryContents" style="height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 10px;">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status"></div>
+                        <p class="mt-2">Loading...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="selectDirectoryBtn" onclick="selectCurrentDirectory()" disabled>Select Directory</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Command Output Modal -->
+<div class="modal fade" id="commandOutputModal" tabindex="-1" aria-labelledby="commandOutputModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="commandOutputModalLabel">Command Output</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="progressContainer" class="p-3" style="display: none;">
+                    <div class="progress mb-2">
+                        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <small id="progressText" class="text-muted">Initializing...</small>
+                </div>
+                <pre id="commandOutput" class="bg-dark text-light p-3 m-0" style="height: 500px; overflow-y: auto; font-family: 'Courier New', monospace;">Running command...</pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Model Selection Modal -->
+<div class="modal fade" id="modelSelectionModal" tabindex="-1" aria-labelledby="modelSelectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="modelSelectionModalLabel">Select AI Model</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Available Models:</label>
+                    <select class="form-select" id="modelSelect">
+                        <option value="">Loading models...</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Or download a new model:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="newModelName" placeholder="e.g., llama3.2:1b">
+                        <button class="btn btn-outline-primary" onclick="downloadModel()">Download</button>
+                    </div>
+                    <small class="text-muted">Recommended for code analysis:</small>
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-outline-primary me-1 mb-1" onclick="document.getElementById('newModelName').value='codellama:7b-instruct'">CodeLlama 7B</button>
+                        <button class="btn btn-sm btn-outline-primary me-1 mb-1" onclick="document.getElementById('newModelName').value='qwen2.5-coder:7b'">Qwen2.5-Coder 7B</button>
+                        <button class="btn btn-sm btn-outline-primary me-1 mb-1" onclick="document.getElementById('newModelName').value='llama3.2:3b'">Llama3.2 3B</button>
+                    </div>
+                    <small class="text-muted">Fast options:</small>
+                    <div class="mt-1">
+                        <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="document.getElementById('newModelName').value='llama3.2:1b'">Llama3.2 1B</button>
+                        <button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="document.getElementById('newModelName').value='deepseek-coder:6.7b'">DeepSeek-Coder 6.7B</button>
+                    </div>
+                    <small class="text-muted">High quality (needs more RAM):</small>
+                    <div class="mt-1">
+                        <button class="btn btn-sm btn-outline-success me-1 mb-1" onclick="document.getElementById('newModelName').value='llama3.1:8b'">Llama3.1 8B</button>
+                        <button class="btn btn-sm btn-outline-success me-1 mb-1" onclick="document.getElementById('newModelName').value='codellama:13b-instruct'">CodeLlama 13B</button>
+                    </div>
+                </div>
+                <div id="downloadProgress" class="d-none">
+                    <div class="progress mb-2">
+                        <div id="downloadProgressBar" class="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <small id="downloadStatus">Downloading...</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="runAnalysisWithModel()">Analyze</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Workspace Creation Modal -->
 <div class="modal fade" id="createWorkspaceModal" tabindex="-1" aria-labelledby="createWorkspaceModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -63,6 +227,13 @@
                     <div class="mb-3">
                         <label for="projectName" class="form-label">Project Name</label>
                         <input type="text" class="form-control" id="projectName" value="terraform-sandbox">
+                    </div>
+                    <div class="mb-3" id="selectedProjectInfo" style="display: none;">
+                        <label class="form-label">Selected Project</label>
+                        <div class="alert alert-info">
+                            <strong id="workspaceSelectedProject">None</strong>
+                            <input type="hidden" id="selectedProjectSession" value="">
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="environment" class="form-label">Environment</label>
@@ -142,9 +313,46 @@
 </div>
 
 <script>
+    let selectedProjectSession = null;
+    let selectedProjectName = null;
+
+    function checkOllamaStatus() {
+        fetch('/api/model-status')
+            .then(response => response.json())
+            .then(data => {
+                const statusEl = document.getElementById('ollamaStatus');
+                if (data.ollama && data.ollama.running) {
+                    statusEl.className = 'badge bg-success';
+                    statusEl.textContent = 'AI Connected';
+                } else {
+                    statusEl.className = 'badge bg-danger';
+                    statusEl.textContent = 'AI Offline';
+                }
+            })
+            .catch(() => {
+                document.getElementById('ollamaStatus').className = 'badge bg-danger';
+                document.getElementById('ollamaStatus').textContent = 'AI Offline';
+            });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
-        // Load workspaces
-        loadWorkspaces();
+        // Check Ollama status
+        checkOllamaStatus();
+        
+        // Check if this is a workspace view
+        {% if is_workspace_view %}
+            loadWorkspaceDetails('{{ workspace_id }}');
+        {% else %}
+            // Load workspaces
+            loadWorkspaces();
+        {% endif %}
+
+        // Project selection button
+        document.getElementById('selectProjectBtn').addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('selectProjectModal'));
+            modal.show();
+            loadUploadedProjects();
+        });
 
         // Workspace creation button
         document.getElementById('createWorkspaceBtn').addEventListener('click', function() {
@@ -157,6 +365,216 @@
             createWorkspace();
         });
     });
+
+    function loadUploadedProjects() {
+        fetch('/api/projects')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('uploadedProjects');
+                if (data.success && data.projects.length > 0) {
+                    let html = '';
+                    data.projects.forEach(project => {
+                        const typeStr = project.project_type.join(', ');
+                        html += `
+                            <div class="card mb-2 project-card" onclick="selectProject('${project.session_id}', '${project.session_id}', 'uploaded')">
+                                <div class="card-body p-2">
+                                    <h6 class="card-title mb-1">${project.session_id}</h6>
+                                    <small class="text-muted">${typeStr} • ${project.file_count} files</small>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p class="text-muted">No uploaded projects found.</p>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('uploadedProjects').innerHTML = '<p class="text-danger">Error loading projects.</p>';
+            });
+    }
+
+    function browseLocalProjects() {
+        fetch('/api/browse-local-projects')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('localProjectsList');
+                if (data.success && data.projects.length > 0) {
+                    let html = '';
+                    data.projects.forEach(project => {
+                        html += `
+                            <div class="card mb-2 project-card" onclick="selectLocalProject('${project.path}', '${project.name}')">
+                                <div class="card-body p-2">
+                                    <h6 class="card-title mb-1">${project.name}</h6>
+                                    <small class="text-muted">${project.type} • ${project.file_count} files</small>
+                                    <br><small class="text-muted">${project.path}</small>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p class="text-muted">No local projects found.</p>';
+                }
+            })
+            .catch(error => {
+                document.getElementById('localProjectsList').innerHTML = '<p class="text-danger">Error loading local projects.</p>';
+            });
+    }
+
+    function selectProject(sessionId, name, type) {
+        selectedProjectSession = sessionId;
+        selectedProjectName = name;
+        
+        // Update UI
+        document.getElementById('selectedProject').classList.remove('d-none');
+        document.getElementById('selectedProjectName').textContent = name;
+        document.getElementById('selectedProjectInfo').style.display = 'block';
+        document.getElementById('workspaceSelectedProject').textContent = name;
+        document.getElementById('selectedProjectSession').value = sessionId;
+        
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('selectProjectModal'));
+        modal.hide();
+        
+        // Offer to create sandbox workspace
+        if (confirm(`Create a sandbox workspace for "${name}"?\n\nThis will copy the Terraform files to a new workspace for safe testing.`)) {
+            createSandboxWorkspace(name);
+        }
+    }
+
+    function selectLocalProject(path, name) {
+        // Load local project first
+        fetch('/api/load-local-project', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ project_path: path })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                selectProject(data.session_id, name, 'local');
+            } else {
+                alert('Error loading local project: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error loading local project: ' + error.message);
+        });
+    }
+
+    let currentBrowsePath = '';
+
+    function showDirectoryBrowser() {
+        const modal = new bootstrap.Modal(document.getElementById('directoryBrowserModal'));
+        modal.show();
+        browseDirectory('');
+    }
+
+    function browseDirectory(path) {
+        fetch('/api/browse-directory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: path })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentBrowsePath = data.current_path;
+                document.getElementById('currentPath').value = currentBrowsePath;
+                renderDirectoryContents(data.items);
+                document.getElementById('selectDirectoryBtn').disabled = false;
+            } else {
+                document.getElementById('directoryContents').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('directoryContents').innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+        });
+    }
+
+    function renderDirectoryContents(items) {
+        const container = document.getElementById('directoryContents');
+        let html = '';
+        
+        items.forEach((item, index) => {
+            const icon = item.type === 'parent' ? 'fa-level-up-alt' : 
+                        item.is_directory ? 'fa-folder' : 'fa-file';
+            const color = item.type === 'parent' ? 'text-warning' :
+                         item.is_directory ? 'text-primary' : 'text-muted';
+            const projectInfo = item.project_type ? ` (${item.project_type})` : '';
+            
+            html += `
+                <div class="d-flex align-items-center p-2 border-bottom directory-item" 
+                     style="cursor: pointer;" data-path="${item.path}" data-name="${item.name}" 
+                     data-is-directory="${item.is_directory}" data-index="${index}">
+                    <i class="fas ${icon} ${color} me-2"></i>
+                    <span class="flex-grow-1">${item.name}${projectInfo}</span>
+                    ${item.is_directory && item.project_type ? 
+                        `<button class="btn btn-sm btn-success select-project-btn" data-path="${item.path}" data-name="${item.name}">Select</button>` : ''}
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+        
+        // Add event listeners
+        container.querySelectorAll('.directory-item').forEach(el => {
+            el.addEventListener('click', function() {
+                if (this.dataset.isDirectory === 'true') {
+                    browseDirectory(this.dataset.path);
+                }
+            });
+        });
+        
+        container.querySelectorAll('.select-project-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                selectDirectoryAsProject(this.dataset.path, this.dataset.name);
+            });
+        });
+    }
+
+    function selectDirectoryAsProject(path, name) {
+        console.log('Selecting directory:', path, name);
+        selectLocalProject(path, name);
+        const modal = bootstrap.Modal.getInstance(document.getElementById('directoryBrowserModal'));
+        modal.hide();
+    }
+
+    function selectCurrentDirectory() {
+        const dirName = currentBrowsePath.split(/[\\/]/).pop() || 'Selected Directory';
+        console.log('Selecting current directory:', currentBrowsePath, dirName);
+        selectLocalProject(currentBrowsePath, dirName);
+        const modal = bootstrap.Modal.getInstance(document.getElementById('directoryBrowserModal'));
+        modal.hide();
+    }
+
+    function navigateToPath() {
+        const path = document.getElementById('currentPath').value;
+        browseDirectory(path);
+    }
+
+    function loadWorkspaceDetails(workspaceId) {
+        const workspacesList = document.getElementById('workspacesList');
+        workspacesList.innerHTML = `
+            <div class="card">
+                <div class="card-header">
+                    <h5>Workspace: ${workspaceId}</h5>
+                    <a href="/terraform/sandbox" class="btn btn-sm btn-secondary">← Back to Workspaces</a>
+                </div>
+                <div class="card-body">
+                    <p><strong>Status:</strong> initialized</p>
+                    <p><strong>Created:</strong> Just now</p>
+                    <div class="mt-3">
+                        <button class="btn btn-primary me-2" onclick="planWorkspace('${workspaceId}')">Run Plan</button>
+                        <button class="btn btn-success me-2" onclick="applyWorkspace('${workspaceId}')">Apply</button>
+                        <button class="btn btn-danger" onclick="destroyWorkspace('${workspaceId}')">Destroy</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 
     function loadWorkspaces() {
         fetch('/terraform/workspaces')
@@ -177,8 +595,11 @@
                             <td>
                                 <div class="btn-group btn-group-sm">
                                     <button class="btn btn-outline-primary" onclick="viewWorkspace('${workspace.workspace_id}')">View</button>
+                                    <button class="btn btn-outline-info" onclick="initWorkspace('${workspace.workspace_id}')">Init</button>
                                     <button class="btn btn-outline-success" onclick="planWorkspace('${workspace.workspace_id}')">Plan</button>
+                                    <button class="btn btn-outline-warning" onclick="analyzeWorkspace('${workspace.workspace_id}')">AI Analysis</button>
                                     <button class="btn btn-outline-danger" onclick="destroyWorkspace('${workspace.workspace_id}')">Destroy</button>
+                                    <button class="btn btn-outline-secondary" onclick="deleteWorkspace('${workspace.workspace_id}')">Delete</button>
                                 </div>
                             </td>
                         </tr>`;
@@ -197,6 +618,33 @@
             });
     }
 
+    function createSandboxWorkspace(projectName) {
+        const workspaceId = `sandbox-${projectName.replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}`;
+        
+        fetch('/terraform/workspaces', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                workspace_id: workspaceId,
+                project_name: projectName,
+                environment: 'sandbox',
+                project_session: selectedProjectSession
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Sandbox workspace "${workspaceId}" created successfully!`);
+                loadWorkspaces();
+            } else {
+                alert('Error creating sandbox workspace: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error creating sandbox workspace: ' + error.message);
+        });
+    }
+
     function createWorkspace() {
         // Get form values
         const data = {
@@ -211,7 +659,8 @@
             enable_security_examples: document.getElementById('enableSecurity').checked,
             enable_container_examples: document.getElementById('enableContainer').checked,
             enable_monitoring_examples: document.getElementById('enableMonitoring').checked,
-            enable_aiml_examples: document.getElementById('enableAIML').checked
+            enable_aiml_examples: document.getElementById('enableAIML').checked,
+            project_session: selectedProjectSession
         };
 
         fetch('/terraform/workspaces', {
@@ -242,39 +691,326 @@
     }
 
     function viewWorkspace(workspaceId) {
-        // Redirect to workspace details page
-        window.location.href = `/terraform/workspaces/${workspaceId}`;
+        const modal = showCommandOutput(`View - ${workspaceId}`, 'workspace details');
+        
+        fetch(`/terraform/workspaces/${workspaceId}`, {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const workspace = data.workspace;
+                const output = `Workspace: ${workspace.workspace_id}
+Created: ${workspace.created_at}
+Status: ${workspace.status}
+Files: ${workspace.files.join(', ') || 'None'}`;
+                document.getElementById('commandOutput').textContent = output;
+            } else {
+                document.getElementById('commandOutput').textContent = `Error: ${data.error}`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+
+    function showCommandOutput(title, command) {
+        document.getElementById('commandOutputModalLabel').textContent = title;
+        document.getElementById('commandOutput').textContent = `Running ${command}...`;
+        const modal = new bootstrap.Modal(document.getElementById('commandOutputModal'));
+        modal.show();
+        return modal;
+    }
+
+    function initWorkspace(workspaceId) {
+        if (confirm(`Initialize Terraform workspace ${workspaceId}?`)) {
+            const modal = showCommandOutput(`Init - ${workspaceId}`, 'terraform init');
+            
+            fetch(`/terraform/workspaces/${workspaceId}/init`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const output = data.init_output || (data.success ? 'Init completed successfully' : data.error);
+                document.getElementById('commandOutput').textContent = output;
+                if (data.success) loadWorkspaces();
+            })
+            .catch(error => {
+                document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+            });
+        }
     }
 
     function planWorkspace(workspaceId) {
         if (confirm(`Run Terraform plan for workspace ${workspaceId}?`)) {
+            const modal = showCommandOutput(`Plan - ${workspaceId}`, 'terraform plan');
+            
             fetch(`/terraform/workspaces/${workspaceId}/plan`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' }
             })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    alert(`Plan complete for workspace ${workspaceId}\n\nPlan Status: ${data.plan_status}`);
-                    // Reload to show updated status
-                    loadWorkspaces();
-                } else {
-                    alert('Error planning workspace: ' + data.error);
-                }
+                const output = data.plan_output || (data.success ? 'Plan completed successfully' : data.error);
+                document.getElementById('commandOutput').textContent = output;
+                if (data.success) loadWorkspaces();
             })
             .catch(error => {
-                console.error('Error planning workspace:', error);
-                alert('Error planning workspace. Please try again later.');
+                document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
             });
         }
     }
 
+    let currentWorkspaceId = null;
+
+    function analyzeWorkspace(workspaceId) {
+        currentWorkspaceId = workspaceId;
+        
+        // Show model selection modal
+        const modelModal = new bootstrap.Modal(document.getElementById('modelSelectionModal'));
+        modelModal.show();
+        
+        // Load available models
+        loadAvailableModels();
+    }
+
+    function loadAvailableModels() {
+        console.log('Loading available models...');
+        // Use the app's model status endpoint
+        fetch('/api/model-status')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Model status response:', data);
+                const select = document.getElementById('modelSelect');
+                select.innerHTML = '';
+                
+                if (data.ollama && data.ollama.models && data.ollama.models.length > 0) {
+                    data.ollama.models.forEach(modelName => {
+                        const option = document.createElement('option');
+                        option.value = modelName;
+                        option.textContent = modelName;
+                        select.appendChild(option);
+                    });
+                    console.log('Added models to dropdown:', data.ollama.models);
+                } else {
+                    select.innerHTML = '<option value="">No models available</option>';
+                    console.log('No models found in response');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading models:', error);
+                document.getElementById('modelSelect').innerHTML = '<option value="">Error loading models</option>';
+            });
+    }
+
+    function downloadModel() {
+        const modelName = document.getElementById('newModelName').value.trim();
+        console.log('downloadModel called with:', modelName);
+        
+        if (!modelName) {
+            alert('Please enter a model name');
+            return;
+        }
+        
+        document.getElementById('downloadProgress').classList.remove('d-none');
+        document.getElementById('downloadStatus').textContent = `Starting download...`;
+        document.getElementById('downloadProgressBar').style.width = '5%';
+        
+        console.log('Sending download request for:', modelName);
+        
+        fetch('/api/download-model', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ modelId: modelName })
+        })
+        .then(response => {
+            console.log('Download response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Download response data:', data);
+            if (data.success) {
+                if (data.download_needed === false) {
+                    // Model already available, just refresh the list
+                    document.getElementById('downloadStatus').textContent = 'Model already available!';
+                    document.getElementById('downloadProgressBar').style.width = '100%';
+                    setTimeout(() => {
+                        loadAvailableModels();
+                        document.getElementById('downloadProgress').classList.add('d-none');
+                    }, 1000);
+                } else {
+                    // Start polling for progress
+                    pollDownloadProgress();
+                }
+            } else {
+                document.getElementById('downloadStatus').textContent = 'Download failed: ' + data.error;
+            }
+        })
+        .catch(error => {
+            console.error('Download error:', error);
+            document.getElementById('downloadStatus').textContent = 'Download error: ' + error.message;
+        });
+    }
+    
+    function pollDownloadProgress() {
+        const poll = () => {
+            fetch('/api/download-progress')
+                .then(response => response.json())
+                .then(data => {
+                    const progressBar = document.getElementById('downloadProgressBar');
+                    const statusText = document.getElementById('downloadStatus');
+                    
+                    progressBar.style.width = data.progress + '%';
+                    statusText.textContent = data.status || 'Downloading...';
+                    
+                    if (data.downloading) {
+                        setTimeout(poll, 1000); // Poll every second
+                    } else if (data.progress >= 100 || !data.downloading) {
+                        statusText.textContent = 'Download complete!';
+                        setTimeout(() => {
+                            loadAvailableModels();
+                            document.getElementById('downloadProgress').classList.add('d-none');
+                        }, 1000);
+                    }
+                })
+                .catch(() => {
+                    setTimeout(poll, 2000); // Retry after 2 seconds on error
+                });
+        };
+        poll();
+    }
+
+    function runAnalysisWithModel() {
+        const selectedModel = document.getElementById('modelSelect').value;
+        if (!selectedModel) {
+            alert('Please select a model');
+            return;
+        }
+        
+        // Close model selection modal
+        const modelModal = bootstrap.Modal.getInstance(document.getElementById('modelSelectionModal'));
+        modelModal.hide();
+        
+        // Start analysis
+        runAnalysisWithSelectedModel(currentWorkspaceId, selectedModel);
+    }
+
+    function runAnalysisWithSelectedModel(workspaceId, modelName) {
+        const modal = showCommandOutput(`AI Analysis - ${workspaceId}`, 'AI analysis');
+        
+        // Show progress bar
+        document.getElementById('progressContainer').style.display = 'block';
+        document.getElementById('commandOutput').style.display = 'none';
+        
+        let progress = 0;
+        
+        // Update progress
+        const updateProgress = (percent, text) => {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').textContent = text;
+        };
+        
+        // Get file list for detailed progress
+        fetch(`/terraform/workspaces/${workspaceId}`, {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(workspaceData => {
+            const files = workspaceData.workspace?.files?.filter(f => f.endsWith('.tf') || f.endsWith('.tfvars')) || [];
+            
+            // Detailed progress simulation
+            updateProgress(10, 'Scanning workspace...');
+            
+            if (files.length > 0) {
+                setTimeout(() => updateProgress(25, `Analyzing ${files[0]}...`), 300);
+                if (files[1]) setTimeout(() => updateProgress(40, `Analyzing ${files[1]}...`), 800);
+                setTimeout(() => updateProgress(55, 'Checking security configurations...'), 1200);
+                setTimeout(() => updateProgress(70, 'Reviewing resource dependencies...'), 1600);
+                setTimeout(() => updateProgress(85, 'Generating recommendations...'), 2000);
+            } else {
+                setTimeout(() => updateProgress(30, 'Sending to AI...'), 500);
+                setTimeout(() => updateProgress(60, 'AI analyzing code...'), 1500);
+            }
+        })
+        .catch(() => {
+            // Fallback progress
+            updateProgress(10, 'Analyzing Terraform files...');
+            setTimeout(() => updateProgress(30, 'Sending to AI...'), 500);
+            setTimeout(() => updateProgress(60, 'AI analyzing code...'), 1500);
+        });
+        
+        fetch(`/terraform/workspaces/${workspaceId}/analyze`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ model: modelName })
+        })
+        .then(response => response.json())
+        .then(data => {
+            updateProgress(100, 'Analysis complete!');
+            setTimeout(() => {
+                document.getElementById('progressContainer').style.display = 'none';
+                document.getElementById('commandOutput').style.display = 'block';
+                const output = data.analysis || (data.success ? 'Analysis completed' : data.error);
+                document.getElementById('commandOutput').textContent = output;
+                
+                // Create and open recommendations file
+                if (data.success && data.analysis) {
+                    createRecommendationsFile(workspaceId, data.analysis);
+                }
+            }, 500);
+        })
+        .catch(error => {
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('commandOutput').style.display = 'block';
+            document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+        });
+    }
+
     function destroyWorkspace(workspaceId) {
         if (confirm(`Are you sure you want to destroy all resources in workspace ${workspaceId}?\n\nThis action cannot be undone!`)) {
+            const modal = showCommandOutput(`Destroy - ${workspaceId}`, 'terraform destroy');
+            
             fetch(`/terraform/workspaces/${workspaceId}/destroy`, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const output = data.destroy_output || (data.success ? 'Destroy completed successfully' : data.error);
+                document.getElementById('commandOutput').textContent = output;
+                if (data.success) loadWorkspaces();
+            })
+            .catch(error => {
+                document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
+            });
+        }
+    }
+
+    function createRecommendationsFile(workspaceId, analysis) {
+        const content = `# AI Analysis Recommendations\n\nGenerated: ${new Date().toISOString()}\nWorkspace: ${workspaceId}\n\n${analysis}`;
+        
+        fetch(`/terraform/workspaces/${workspaceId}/recommendations`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: content })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Open in file browser
+                window.open(`/file-browser?session=${workspaceId}&file=recommendations.md`, '_blank');
+            }
+        })
+        .catch(error => {
+            console.error('Error creating recommendations file:', error);
+        });
+    }
+
+    function deleteWorkspace(workspaceId) {
+        if (confirm(`Are you sure you want to delete workspace ${workspaceId}?\n\nThis will permanently remove the workspace and all its files!`)) {
+            fetch(`/terraform/workspaces/${workspaceId}`, {
+                method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -282,18 +1018,31 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert(`Resources destroyed successfully for workspace ${workspaceId}`);
-                    // Reload to show updated status
+                    alert(`Workspace ${workspaceId} deleted successfully`);
                     loadWorkspaces();
                 } else {
-                    alert('Error destroying resources: ' + data.error);
+                    alert('Error deleting workspace: ' + data.error);
                 }
             })
             .catch(error => {
-                console.error('Error destroying workspace:', error);
-                alert('Error destroying workspace. Please try again later.');
+                console.error('Error deleting workspace:', error);
+                alert('Error deleting workspace. Please try again later.');
             });
         }
     }
+    
+    // Add CSS for project cards
+    const style = document.createElement('style');
+    style.textContent = `
+        .project-card {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .project-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    `;
+    document.head.appendChild(style);
 </script>
 {% endblock %}

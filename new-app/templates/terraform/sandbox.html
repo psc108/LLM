@@ -603,6 +603,59 @@
     </div>
 </div>
 
+<!-- Graphical Display Modal -->
+<div class="modal fade" id="graphicalDisplayModal" tabindex="-1" aria-labelledby="graphicalDisplayModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="graphicalDisplayModalLabel">Terraform Resource Graph</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h4 id="resourceCount" class="text-primary">--</h4>
+                                <p class="mb-0">Total Resources</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h4 id="workspaceTitle" class="text-info">--</h4>
+                                <p class="mb-0">Workspace</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Resource Legend</h6>
+                        <div id="resourceLegend" class="border rounded p-3" style="height: 400px; overflow-y: auto;">
+                            <div class="text-center text-muted">Loading resources...</div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <h6>Visual Graph</h6>
+                        <div id="graphContainer" class="border rounded p-3" style="height: 400px; overflow: auto; background: #f8f9fa;">
+                            <div class="text-center text-muted mt-5">
+                                <div class="spinner-border" role="status"></div>
+                                <p class="mt-2">Generating resource graph...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-info" onclick="refreshGraphicalDisplay()">Refresh</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Workspace Creation Modal -->
 <div class="modal fade" id="createWorkspaceModal" tabindex="-1" aria-labelledby="createWorkspaceModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -998,6 +1051,7 @@
                                                 <li><a class="dropdown-item" href="#" onclick="planWorkspace('${workspace.workspace_id}')"><i class="fas fa-clipboard-list me-2"></i>Plan</a></li>
                                                 <li><a class="dropdown-item text-success" href="#" onclick="applyWorkspace('${workspace.workspace_id}')"><i class="fas fa-rocket me-2"></i>Apply/Deploy</a></li>
                                                 <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item" href="#" onclick="showGraphicalDisplay('${workspace.workspace_id}')"><i class="fas fa-project-diagram me-2"></i>Graphical-Display</a></li>
                                                 <li><a class="dropdown-item" href="#" onclick="viewState('${workspace.workspace_id}')"><i class="fas fa-database me-2"></i>View State</a></li>
                                                 <li><a class="dropdown-item" href="#" onclick="detectDrift('${workspace.workspace_id}')"><i class="fas fa-search me-2"></i>Drift Detection</a></li>
                                                 <li><a class="dropdown-item text-info" href="#" onclick="rollbackWorkspace('${workspace.workspace_id}')"><i class="fas fa-undo me-2"></i>Rollback</a></li>
@@ -1104,15 +1158,7 @@
                                             </ul>
                                         </li>
                                         
-                                        <li class="dropdown-submenu">
-                                            <a class="dropdown-item dropdown-toggle" href="#"><i class="fas fa-robot me-2"></i>AI Assistant</a>
-                                            <ul class="dropdown-menu">
-                                                <li><a class="dropdown-item" href="#" onclick="showAIGenerator('${workspace.workspace_id}')"><i class="fas fa-magic me-2"></i>Generate from Text</a></li>
-                                                <li><a class="dropdown-item" href="#" onclick="getAIRecommendations('${workspace.workspace_id}')"><i class="fas fa-lightbulb me-2"></i>Get Recommendations</a></li>
-                                                <li><a class="dropdown-item" href="#" onclick="fixWithAI('${workspace.workspace_id}')"><i class="fas fa-wrench me-2"></i>Auto-fix Errors</a></li>
-                                            </ul>
-                                        </li>
-                                        
+
                                         <li class="dropdown-submenu">
                                             <a class="dropdown-item dropdown-toggle" href="#"><i class="fas fa-shield-virus me-2"></i>Real-time Security</a>
                                             <ul class="dropdown-menu">
@@ -2196,6 +2242,82 @@ Files: ${workspace.files.join(', ') || 'None'}`;
             border-right: 0;
             border-top: 0.3em solid transparent;
             border-bottom: 0.3em solid transparent;
+        }
+        .resource-graph {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .resource-node {
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .resource-node:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        .resource-node {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 2px solid rgba(255,255,255,0.3) !important;
+            backdrop-filter: blur(5px);
+        }
+        .resource-group {
+            border: 2px dashed #dee2e6 !important;
+        }
+        .dependency-simple {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: visible;
+        }
+        .network-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            overflow: visible;
+        }
+        .network-node {
+            position: absolute;
+            width: 120px;
+            height: 80px;
+            border-radius: 12px;
+            border: 2px solid;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 2;
+        }
+        .network-node:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            z-index: 3;
+        }
+        .node-icon {
+            font-size: 1.5em;
+            margin-bottom: 4px;
+        }
+        .node-label {
+            font-size: 0.8em;
+            font-weight: 600;
+            color: #2c3e50;
+            text-align: center;
+        }
+        .connection-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .connection-path {
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+        .connection-end {
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
         }
     `;
     document.head.appendChild(style);
@@ -3849,5 +3971,232 @@ Files: ${workspace.files.join(', ') || 'None'}`;
             document.getElementById('commandOutput').textContent = `Error: ${error.message}`;
         });
     }
+    
+    let currentGraphWorkspaceId = null;
+    
+    function showGraphicalDisplay(workspaceId) {
+        currentGraphWorkspaceId = workspaceId;
+        const modal = new bootstrap.Modal(document.getElementById('graphicalDisplayModal'));
+        modal.show();
+        
+        // Load graphical display
+        loadGraphicalDisplay(workspaceId);
+    }
+    
+    function loadGraphicalDisplay(workspaceId) {
+        document.getElementById('workspaceTitle').textContent = workspaceId;
+        document.getElementById('resourceCount').textContent = '--';
+        document.getElementById('resourceLegend').innerHTML = '<div class="text-center text-muted">Loading resources...</div>';
+        document.getElementById('graphContainer').innerHTML = `
+            <div class="text-center text-muted mt-5">
+                <div class="spinner-border" role="status"></div>
+                <p class="mt-2">Generating resource graph...</p>
+            </div>
+        `;
+        
+        fetch(`/terraform/workspaces/${workspaceId}/graphical-display`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const visualData = data.visual_data;
+                document.getElementById('resourceCount').textContent = visualData.resource_count;
+                
+                // Render resource legend
+                renderResourceLegend(visualData.resources);
+                
+                // Render visual graph
+                renderVisualGraph(visualData);
+            } else {
+                document.getElementById('graphContainer').innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6>Error generating graph:</h6>
+                        <p>${data.error}</p>
+                        <small>Make sure Terraform is initialized and configured properly.</small>
+                    </div>
+                `;
+                document.getElementById('resourceLegend').innerHTML = '<div class="text-danger">Error loading resources</div>';
+            }
+        })
+        .catch(error => {
+            document.getElementById('graphContainer').innerHTML = `
+                <div class="alert alert-danger">
+                    <h6>Connection Error:</h6>
+                    <p>${error.message}</p>
+                </div>
+            `;
+            document.getElementById('resourceLegend').innerHTML = '<div class="text-danger">Connection error</div>';
+        });
+    }
+    
+    function renderResourceLegend(resources) {
+        const legendContainer = document.getElementById('resourceLegend');
+        
+        if (resources.length === 0) {
+            legendContainer.innerHTML = '<div class="text-muted">No resources found</div>';
+            return;
+        }
+        
+        let html = '';
+        resources.forEach(resource => {
+            html += `
+                <div class="d-flex align-items-center mb-2 p-2 border rounded" style="background-color: ${resource.color}15;">
+                    <span class="me-2" style="font-size: 1.2em;">${resource.icon}</span>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">${resource.name}</div>
+                        <small class="text-muted">${resource.type}</small>
+                    </div>
+                </div>
+            `;
+        });
+        
+        legendContainer.innerHTML = html;
+    }
+    
+    function renderVisualGraph(visualData) {
+        const graphContainer = document.getElementById('graphContainer');
+        
+        if (visualData.resources.length === 0) {
+            graphContainer.innerHTML = `
+                <div class="text-center text-muted mt-5">
+                    <i class="fas fa-cube fa-3x mb-3"></i>
+                    <h5>No Resources Found</h5>
+                    <p>This workspace doesn't contain any Terraform resources yet.</p>
+                    <small>Add some resources to see the graphical representation.</small>
+                </div>
+            `;
+            return;
+        }
+        
+        // Create simple dependency visualization
+        let html = '<div class="resource-graph">';
+        
+        if (visualData.dependencies && visualData.dependencies.length > 0) {
+            html += '<h6 class="mb-3">Resource Dependencies</h6>';
+            html += '<div class="dependency-simple mb-4">';
+            
+            const resourceMap = {};
+            visualData.resources.forEach(resource => {
+                resourceMap[resource.id] = resource;
+            });
+            
+            // Create network-style layout
+            html += '<div class="network-container">';
+            
+            // Position resources in a grid-like layout
+            const resourcePositions = {};
+            let col = 0, row = 0;
+            
+            visualData.resources.forEach((resource, index) => {
+                const displayName = resource.name === 'example' ? resource.type.replace('aws_', '') : resource.name;
+                const x = (col % 3) * 200 + 100;
+                const y = Math.floor(col / 3) * 150 + 50;
+                
+                resourcePositions[resource.id] = { x, y, resource, displayName };
+                
+                html += `
+                    <div class="network-node" style="left: ${x}px; top: ${y}px; background-color: ${resource.color}20; border-color: ${resource.color};">
+                        <div class="node-icon">${resource.icon}</div>
+                        <div class="node-label">${displayName}</div>
+                    </div>
+                `;
+                col++;
+            });
+            
+            // Draw connections with SVG
+            html += '<svg class="connection-svg" width="100%" height="400">';
+            
+            visualData.dependencies.slice(0, 8).forEach(dep => {
+                const from = resourcePositions[dep.from];
+                const to = resourcePositions[dep.to];
+                
+                if (from && to) {
+                    const x1 = from.x + 60;
+                    const y1 = from.y + 40;
+                    const x2 = to.x + 60;
+                    const y2 = to.y + 40;
+                    
+                    // Create curved path
+                    const midX = (x1 + x2) / 2;
+                    const midY = (y1 + y2) / 2 - 30;
+                    
+                    html += `
+                        <path d="M ${x1} ${y1} Q ${midX} ${midY} ${x2} ${y2}" 
+                              stroke="#667eea" stroke-width="3" fill="none" 
+                              stroke-dasharray="5,5" class="connection-path">
+                            <animate attributeName="stroke-dashoffset" values="10;0" dur="2s" repeatCount="indefinite"/>
+                        </path>
+                        <circle cx="${x2}" cy="${y2}" r="4" fill="#667eea" class="connection-end"/>
+                    `;
+                }
+            });
+            
+            html += '</svg>';
+            html += '</div>';
+            
+            html += '</div>';
+        }
+        
+        // Group remaining resources by type
+        html += '<h6 class="mb-3">All Resources</h6>';
+        const resourcesByType = {};
+        visualData.resources.forEach(resource => {
+            if (!resourcesByType[resource.type]) {
+                resourcesByType[resource.type] = [];
+            }
+            resourcesByType[resource.type].push(resource);
+        });
+        
+        // Render resource groups
+        Object.entries(resourcesByType).forEach(([type, resources]) => {
+            html += `
+                <div class="resource-group mb-3 p-3 border rounded" style="background-color: #f8f9fa;">
+                    <h6 class="text-primary mb-2">${type}</h6>
+                    <div class="d-flex flex-wrap gap-2">
+            `;
+            
+            resources.forEach(resource => {
+                const displayName = resource.name === 'example' ? resource.type.replace('aws_', '') : resource.name;
+                html += `
+                    <div class="resource-node p-2 border rounded text-center" 
+                         style="background-color: ${resource.color}20; border-color: ${resource.color}!important; min-width: 100px;">
+                        <div style="font-size: 1.5em;">${resource.icon}</div>
+                        <div class="fw-bold" style="font-size: 0.8em;">${displayName}</div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        
+        // Add DOT graph info if available
+        if (visualData.graph_dot && visualData.graph_dot.trim()) {
+            html += `
+                <div class="mt-4">
+                    <h6>Terraform Dependency Graph (DOT format)</h6>
+                    <div class="alert alert-info">
+                        <small>This graph shows the dependency relationships between resources.</small>
+                    </div>
+                    <pre class="bg-light p-3 rounded" style="font-size: 0.8em; max-height: 200px; overflow-y: auto;">${visualData.graph_dot}</pre>
+                </div>
+            `;
+        }
+        
+        graphContainer.innerHTML = html;
+    }
+    
+    function refreshGraphicalDisplay() {
+        if (currentGraphWorkspaceId) {
+            loadGraphicalDisplay(currentGraphWorkspaceId);
+        }
+    }
+    
+
 </script>
 {% endblock %}

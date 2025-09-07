@@ -270,18 +270,7 @@
             display: flex;
         }
 
-        .line-numbers {
-            background-color: var(--bg-tertiary);
-            color: var(--text-muted);
-            padding: 20px 10px;
-            font-family: 'Courier New', Consolas, Monaco, monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            text-align: right;
-            user-select: none;
-            border-right: 1px solid var(--border-color);
-            min-width: 50px;
-        }
+
 
         .code-editor-wrapper {
             flex: 1;
@@ -433,7 +422,7 @@
                 <h3>File Editor</h3>
                 <p>Select a file from the tree to start editing</p>
             </div>
-            <div class="line-numbers" id="line-numbers" style="display: none;"></div>
+
             <div class="code-editor-wrapper">
                 <textarea
                         class="code-editor"
@@ -474,6 +463,24 @@
                 <select id="ai-model-select" style="width: 100%; padding: 5px; margin-bottom: 10px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px;">
                     <option value="">Loading models...</option>
                 </select>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; font-size: 12px;">
+                    <div>
+                        <label style="color: var(--text-muted);">Max Tokens:</label>
+                        <input id="ai-max-tokens" type="number" value="2048" min="1" max="8192" style="width: 100%; padding: 3px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 3px;">
+                    </div>
+                    <div>
+                        <label style="color: var(--text-muted);">Temperature:</label>
+                        <input id="ai-temperature" type="number" value="0.7" min="0" max="2" step="0.1" style="width: 100%; padding: 3px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 3px;">
+                    </div>
+                    <div>
+                        <label style="color: var(--text-muted);">Timeout (s):</label>
+                        <input id="ai-timeout" type="number" value="30" min="5" max="300" style="width: 100%; padding: 3px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 3px;">
+                    </div>
+                    <div>
+                        <label style="color: var(--text-muted);">Top P:</label>
+                        <input id="ai-top-p" type="number" value="0.9" min="0" max="1" step="0.1" style="width: 100%; padding: 3px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 3px;">
+                    </div>
+                </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px;">
                     <button class="btn btn-sm btn-success" onclick="aiAction('generate')" title="Generate from Text">
                         <i class="fas fa-magic"></i> Generate
@@ -765,28 +772,14 @@
     function showEditor() {
         document.getElementById('editor-welcome').style.display = 'none';
         document.getElementById('code-editor').style.display = 'block';
-        document.getElementById('line-numbers').style.display = 'block';
         document.getElementById('save-btn').disabled = false;
-        updateLineNumbers();
     }
 
-    function updateLineNumbers() {
-        const editor = document.getElementById('code-editor');
-        const lineNumbers = document.getElementById('line-numbers');
-        const content = editor.value || '';
-        const lines = content.split('\n');
-        
-        const lineNumbersArray = [];
-        for (let i = 1; i <= Math.max(lines.length, 1); i++) {
-            lineNumbersArray.push(i);
-        }
-        lineNumbers.textContent = lineNumbersArray.join('\n');
-    }
+
 
     function showWelcomeScreen() {
         document.getElementById('editor-welcome').style.display = 'flex';
         document.getElementById('code-editor').style.display = 'none';
-        document.getElementById('line-numbers').style.display = 'none';
         document.getElementById('current-file-path').textContent = 'No file selected';
         document.getElementById('save-btn').disabled = true;
         currentFile = null;
@@ -854,13 +847,9 @@
     document.getElementById('code-editor').addEventListener('input', function() {
         const currentContent = this.value;
         setModified(currentContent !== fileContent);
-        updateLineNumbers();
     });
 
-    document.getElementById('code-editor').addEventListener('scroll', function() {
-        const lineNumbers = document.getElementById('line-numbers');
-        lineNumbers.scrollTop = this.scrollTop;
-    });
+
 
     // Track cursor position
     document.getElementById('code-editor').addEventListener('keyup', updateCursorPosition);
@@ -1071,7 +1060,7 @@
                     const option = document.createElement('option');
                     option.value = model;
                     option.textContent = model;
-                    if (model === result.active_model) {
+                    if (model === 'llama3.2:1b' || (model === result.active_model && !result.ollama.models.includes('llama3.2:1b'))) {
                         option.selected = true;
                     }
                     select.appendChild(option);
@@ -1130,15 +1119,34 @@
                     const request = prompt('Describe what you want to create:', 'Create a VPC with 3 subnets and security groups');
                     if (!request) return;
                     endpoint = `/terraform/workspaces/${sessionId}/ai-generate`;
-                    body = { request: request, model: document.getElementById('ai-model-select').value };
+                    body = { 
+                        request: request, 
+                        model: document.getElementById('ai-model-select').value,
+                        max_tokens: parseInt(document.getElementById('ai-max-tokens').value),
+                        temperature: parseFloat(document.getElementById('ai-temperature').value),
+                        timeout: parseInt(document.getElementById('ai-timeout').value),
+                        top_p: parseFloat(document.getElementById('ai-top-p').value)
+                    };
                     break;
                 case 'recommend':
                     endpoint = `/terraform/workspaces/${sessionId}/ai-recommend`;
-                    body = { model: document.getElementById('ai-model-select').value };
+                    body = { 
+                        model: document.getElementById('ai-model-select').value,
+                        max_tokens: parseInt(document.getElementById('ai-max-tokens').value),
+                        temperature: parseFloat(document.getElementById('ai-temperature').value),
+                        timeout: parseInt(document.getElementById('ai-timeout').value),
+                        top_p: parseFloat(document.getElementById('ai-top-p').value)
+                    };
                     break;
                 case 'fix':
                     endpoint = `/terraform/workspaces/${sessionId}/ai-fix`;
-                    body = { model: document.getElementById('ai-model-select').value };
+                    body = { 
+                        model: document.getElementById('ai-model-select').value,
+                        max_tokens: parseInt(document.getElementById('ai-max-tokens').value),
+                        temperature: parseFloat(document.getElementById('ai-temperature').value),
+                        timeout: parseInt(document.getElementById('ai-timeout').value),
+                        top_p: parseFloat(document.getElementById('ai-top-p').value)
+                    };
                     break;
                 default:
                     addChatMessage(`❌ Unknown AI action: ${action}`, 'assistant');

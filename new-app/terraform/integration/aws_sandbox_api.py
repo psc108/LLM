@@ -352,7 +352,7 @@ def analyze_workspace(workspace_id):
             response = requests.post(
                 ollama_url,
                 json={
-                    'model': active_model,
+                    'model': model_to_use,
                     'prompt': prompt,
                     'stream': False,
                     'options': {'temperature': 0.1, 'num_predict': max_tokens}
@@ -1131,6 +1131,62 @@ def run_terratest(workspace_id):
         if not os.path.exists(workspace_path):
             return jsonify({'success': False, 'error': 'Workspace not found'}), 404
         
+        data = request.get_json() or {}
+        install_terratest = data.get('install_terratest', False)
+        
+        # Check if Go is installed
+        try:
+            go_result = subprocess.run(['go', 'version'], capture_output=True, text=True, timeout=10)
+            if go_result.returncode != 0:
+                return jsonify({
+                    'success': False, 
+                    'error': 'Go is not installed. Please install Go first.',
+                    'install_required': 'go'
+                }), 400
+        except FileNotFoundError:
+            return jsonify({
+                'success': False, 
+                'error': 'Go is not installed. Please install Go first.',
+                'install_required': 'go'
+            }), 400
+        
+        # Check if terratest is available
+        go_mod_path = os.path.join(workspace_path, 'go.mod')
+        terratest_available = False
+        
+        if os.path.exists(go_mod_path):
+            with open(go_mod_path, 'r') as f:
+                if 'github.com/gruntwork-io/terratest' in f.read():
+                    terratest_available = True
+        
+        if not terratest_available and not install_terratest:
+            return jsonify({
+                'success': False,
+                'error': 'Terratest is not installed. Would you like to install it?',
+                'install_required': 'terratest',
+                'install_available': True
+            }), 400
+        
+        # Install terratest if requested
+        if install_terratest and not terratest_available:
+            # Initialize go module
+            subprocess.run(['go', 'mod', 'init', f'terratest-{workspace_id}'], cwd=workspace_path, capture_output=True)
+            
+            # Install terratest
+            install_result = subprocess.run(
+                ['go', 'get', 'github.com/gruntwork-io/terratest/modules/terraform', 'github.com/stretchr/testify/assert'],
+                cwd=workspace_path,
+                capture_output=True,
+                text=True,
+                timeout=120
+            )
+            
+            if install_result.returncode != 0:
+                return jsonify({
+                    'success': False,
+                    'error': f'Failed to install terratest: {install_result.stderr}'
+                }), 500
+        
         # Create basic Go test file
         test_content = '''package test
 
@@ -1168,7 +1224,8 @@ func TestTerraform(t *testing.T) {
         return jsonify({
             'success': result.returncode == 0,
             'test_output': result.stdout + result.stderr,
-            'test_file_created': 'main_test.go'
+            'test_file_created': 'main_test.go',
+            'terratest_installed': install_terratest
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -2430,7 +2487,7 @@ Terraform code:"""
             response = requests.post(
                 ollama_url,
                 json={
-                    'model': active_model,
+                    'model': model,
                     'prompt': prompt,
                     'stream': False,
                     'options': {'temperature': 0.1, 'num_predict': 1500}
@@ -2529,7 +2586,7 @@ Recommendations:"""
             response = requests.post(
                 ollama_url,
                 json={
-                    'model': active_model,
+                    'model': model,
                     'prompt': prompt,
                     'stream': False,
                     'options': {'temperature': 0.2, 'num_predict': 1000}
@@ -2570,7 +2627,7 @@ def ai_fix_errors(workspace_id):
         
         data = request.get_json()
         error_output = data.get('error_output', '')
-        model = data.get('model', 'codellama:7b-instruct')
+        model = data.get('model') or active_model
         
         if not error_output:
             # Run terraform validate to get errors
@@ -2608,18 +2665,11 @@ Provide corrected Terraform code with explanations of fixes:"""
         
         # Check Ollama availability first
         import requests
-        ollama_host = os.environ.get('OLLAMA_HOST', 'localhost')
-        ollama_port = os.environ.get('OLLAMA_PORT', '11434')
-        ollama_url = f"http://{ollama_host}:{ollama_port}/api/generate"
+        from app import get_ollama_url, check_ollama_connection
+        ollama_url = get_ollama_url('/api/generate')
         
-        try:
-            # Test Ollama connection
-            test_response = requests.get(f"http://{ollama_host}:{ollama_port}/api/tags", timeout=5)
-            if test_response.status_code != 200:
-                # Fallback to basic error analysis
-                return provide_basic_fixes(error_output, terraform_files, workspace_path)
-        except requests.exceptions.RequestException:
-            # Fallback to basic error analysis
+        is_connected, _ = check_ollama_connection()
+        if not is_connected:
             return provide_basic_fixes(error_output, terraform_files, workspace_path)
         
         try:
@@ -2820,6 +2870,148 @@ def security_monitor_status(workspace_id):
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@terraform_bp.route('/workspaces/<workspace_id>/graphical-display', methods=['POST'])
+def generate_graphical_display(workspace_id):
+    try:
+        workspace_path = os.path.join(WORKSPACE_DIR, workspace_id)
+        if not os.path.exists(workspace_path):
+            return jsonify({'success': False, 'error': 'Workspace not found'}), 404
+        
+        # Parse terraform files for resource info and dependencies
+        resources = []
+        dependencies = []
+        all_content = ''
+        graph_output = None
+        
+        for file in os.listdir(workspace_path):
+            if file.endswith('.tf'):
+                file_path = os.path.join(workspace_path, file)
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        all_content += content + '\n'
+                        
+                        import re
+                        resource_matches = re.findall(r'resource\s+"([^"]+)"\s+"([^"]+)"', content)
+                        for resource_type, resource_name in resource_matches:
+                            resources.append({
+                                'type': resource_type,
+                                'name': resource_name,
+                                'id': f'{resource_type}.{resource_name}',
+                                'icon': get_aws_resource_icon(resource_type),
+                                'color': get_aws_resource_color(resource_type),
+                                'file': file
+                            })
+                except Exception:
+                    continue
+        
+        # Find dependencies by looking for resource references
+        resource_ids = [r['id'] for r in resources]
+        for resource in resources:
+            import re
+            # Look for references to other resources in the content
+            for other_id in resource_ids:
+                if other_id != resource['id']:
+                    # Check if this resource references another
+                    if re.search(rf'\b{re.escape(other_id)}\b', all_content):
+                        dependencies.append({
+                            'from': resource['id'],
+                            'to': other_id
+                        })
+        
+        # Try terraform graph only if files are valid
+        if resources:
+            try:
+                result = subprocess.run(
+                    ['terraform', 'graph'],
+                    cwd=workspace_path,
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+                
+                if result.returncode == 0:
+                    graph_output = result.stdout
+                    
+            except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
+                pass  # Continue without graph output
+        
+        # Create visual representation
+        visual_data = {
+            'graph_dot': graph_output,
+            'resources': resources,
+            'dependencies': dependencies,
+            'resource_count': len(resources),
+            'workspace_id': workspace_id,
+            'has_graph': graph_output is not None
+        }
+        
+        return jsonify({
+            'success': True,
+            'visual_data': visual_data
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+def get_aws_resource_icon(resource_type):
+    """Get appropriate icon for AWS resource type"""
+    icons = {
+        'aws_instance': '🖥️',
+        'aws_rds_instance': '🗄️',
+        'aws_s3_bucket': '📦',
+        'aws_lambda_function': '⚡',
+        'aws_vpc': '🌐',
+        'aws_subnet': '🔗',
+        'aws_security_group': '🛡️',
+        'aws_internet_gateway': '🌍',
+        'aws_route_table': '🗺️',
+        'aws_load_balancer': '⚖️',
+        'aws_alb': '⚖️',
+        'aws_elb': '⚖️',
+        'aws_cloudfront_distribution': '🚀',
+        'aws_iam_role': '👤',
+        'aws_iam_policy': '📋',
+        'aws_autoscaling_group': '📈',
+        'aws_launch_configuration': '🚀',
+        'aws_launch_template': '📄',
+        'aws_ebs_volume': '💾',
+        'aws_eip': '🌐',
+        'aws_nat_gateway': '🔄',
+        'aws_route53_zone': '🌍',
+        'aws_cloudwatch_log_group': '📊'
+    }
+    return icons.get(resource_type, '📋')
+
+def get_aws_resource_color(resource_type):
+    """Get appropriate color for AWS resource type"""
+    colors = {
+        'aws_instance': '#FF9900',
+        'aws_rds_instance': '#3F48CC',
+        'aws_s3_bucket': '#569A31',
+        'aws_lambda_function': '#FF9900',
+        'aws_vpc': '#FF9900',
+        'aws_subnet': '#FF9900',
+        'aws_security_group': '#FF4B4B',
+        'aws_internet_gateway': '#232F3E',
+        'aws_route_table': '#FF9900',
+        'aws_load_balancer': '#8C4FFF',
+        'aws_alb': '#8C4FFF',
+        'aws_elb': '#8C4FFF',
+        'aws_cloudfront_distribution': '#8C4FFF',
+        'aws_iam_role': '#FF4B4B',
+        'aws_iam_policy': '#FF4B4B',
+        'aws_autoscaling_group': '#FF9900',
+        'aws_launch_configuration': '#FF9900',
+        'aws_launch_template': '#FF9900',
+        'aws_ebs_volume': '#FF9900',
+        'aws_eip': '#232F3E',
+        'aws_nat_gateway': '#FF9900',
+        'aws_route53_zone': '#8C4FFF',
+        'aws_cloudwatch_log_group': '#759C3E'
+    }
+    return colors.get(resource_type, '#232F3E')
 
 def get_vulnerability_severity(rule_name):
     severity_map = {
